@@ -1,0 +1,3 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	F_D07_20231011_102800.WAV	F_D07_20231011_104000.WAV	1.748951424	237.607543495	235.8586	2023-10-11  10:28:01.7490	2023-10-11 10:40:57.6075	2052.632	36947.368	18937.5	clicks	Physeter macrocephalus	fishing_operations_aFAD	F_D07	F_D07_sel_01_phyMac
+2	Spectrogram 1	1	F_D07_20231011_140401.WAV	F_D07_20231011_141201.WAV	246.102450413	416.999989583	170.8975	2023-10-11  14:04:07.1025	2023-10-11 14:12:59.0000	6157.895	36789.474	14062.5	clicks	Physeter macrocephalus	fishing_operations_aFAD	F_D07	F_D07_sel_02_phyMac

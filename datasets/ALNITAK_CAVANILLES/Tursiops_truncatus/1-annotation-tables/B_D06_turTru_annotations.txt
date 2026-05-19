@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	B_D06_20231117_110200.WAV	B_D06_20231117_110200.WAV	3.60169982910156	38.4219000339508	34.8202002048492	2023-11-17 11:02:03.6017	2023-11-17 11:02:38.4219	5264.516	96000	25500	clicks	Tursiops truncatus	high	boat_based_surveys	B_D06	B_D06_sel_01_turTru_clicks

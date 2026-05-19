@@ -1,0 +1,15 @@
+DOL1: tremail net with dead dolphin swaddled in it;
+DOL1_N26: similar to DOL1 without frequency correction table;
+DOL3: white trawl net;
+DOL3_N36: similar to DOL3 without frequency correction table;
+DOL4: white trawl net with dead dolphin swaddled in it;
+DOL5: green trawl net;
+DOL6: green trawl net with dead dolphin swaddled in it;
+DDD: recorded DDD03H signal;
+DC: DOL1 emitted with improved fidelity;
+DC70: DOL1 emitted with a reduced frequency range;
+DOL1.2: DOL1 signal emitted every 10 sec with 3V;
+DOL4.2: DOL4 signal emitted every 10 sec with 3V;
+NDN: Maurice Ravel - Ondine (piano version from Gaspard de la Nuit);
+RNQ: The Entertainer - Them (piano version);
+Orca: recorded whistles of orcas;

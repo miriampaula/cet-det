@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	B_D05_20230820_100600.WAV	B_D05_20230820_100600.WAV	41.1147999763489	42.5764000415802	1.46160006523132	2023-08-20 10:06:41.1148	2023-08-20 10:06:42.5764	3088.235	24000	21937.5	clicks	Grampus griseus	high	boat_based_surveys	B_D05	B_D05_sel_01_graGri_clicks

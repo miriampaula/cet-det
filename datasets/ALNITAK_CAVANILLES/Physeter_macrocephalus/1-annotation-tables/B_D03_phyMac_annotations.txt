@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	B_D03_20230819_080500.WAV	B_D03_20230819_080500.WAV	0.293099880218506	18.1521999835968	17.8591001033783	2023-08-19 08:05:00.2931	2023-08-19 08:05:18.1522	2304.636	23920.53	13125	clicks	Physeter macrocephalus	medium	boat_based_surveys	B_D03	B_D03_sel_01_phyMac

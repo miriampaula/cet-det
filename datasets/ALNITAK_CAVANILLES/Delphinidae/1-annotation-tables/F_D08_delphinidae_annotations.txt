@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	F_D08_20240828_023600.WAV	F_D08_20240828_023600.WAV	26.2087998390198	42.0299999713898	15.82120013237	2024-08-28 02:36:26.2088	2024-08-28 02:36:42.0300	1578.947	48000	20437.5	clicks	Delphinidae	high	fishing_operations_trammel_net	F_D08	F_D08_sel_01_delphinidae_clicks

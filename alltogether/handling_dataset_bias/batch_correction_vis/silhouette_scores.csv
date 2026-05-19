@@ -1,0 +1,5 @@
+variant,dataset_silhouette (↓ better),class_silhouette   (↑ better)
+Raw (baseline),-0.0108,-0.0893
+Std normalisation,-0.0727,-0.2173
+ZCA whitening,-0.3338,-0.2745
+Harmony,-0.1015,-0.1825

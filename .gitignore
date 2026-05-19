@@ -1,0 +1,29 @@
+# -------------------------
+# 1. Ignore big folders completely
+# -------------------------
+datasets/
+venv/
+.venv/
+env/
+models/
+
+# -------------------------
+# 2. Ignore everything else
+# -------------------------
+*
+
+# -------------------------
+# 3. Re-allow only what you want
+# -------------------------
+!*/
+
+!*.py
+!*.ipynb
+!*.css
+!*.js
+!*.csv
+!*.txt
+!*.json
+
+
+!.gitignore

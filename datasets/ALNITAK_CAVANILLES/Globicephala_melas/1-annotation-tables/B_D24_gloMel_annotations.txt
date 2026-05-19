@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	B_D24_20240618_101200.WAV	B_D24_20240618_102100.WAV	33.9881999492645	539.929900169373	505.941700220108	2024-06-18 10:12:33.9882	2024-06-18 10:21:44.9299	2589.212	96000	15375	clicks	Globicephala melas	high	boat_based_surveys	B_D24	B_D24_sel_01_gloMel_clicks

@@ -1,0 +1,68 @@
+coarse_class,fine_label,dataset,n_raw,n_kept,action
+Balaenoptera_physalus,Balaenoptera_physalus,MONISH,29,29,KEEP_ALL
+Balaenoptera_physalus,Balaenoptera_physalus,archived-watkins,510,510,KEEP_ALL
+DROP,Balaenoptera_acutorostrata,archived-watkins,17,0,DROP
+DROP,background,DRYAD,3854,0,DROP
+DROP,background,oltremare,13956,0,DROP
+Delphinids,Delphinid clicks,ALNITAK CAVANILLES,304,304,KEEP_ALL
+Delphinids,Delphinid whistles,ALNITAK CAVANILLES,3,3,KEEP_ALL
+Delphinids,Delphinids,ecoss_db_annotated_sounds_metadata,466,466,KEEP_ALL
+Delphinids,Delphinids,ecoss_db_enhanced4AI_sounds_metadata,42,42,KEEP_ALL
+Delphinus delphis,Delphinus delphis whistles,DOLPHINFREE,1150,1150,KEEP_ALL
+Delphinus delphis,Delphinus delphis unkown,archived-watkins,102,102,KEEP_ALL
+Delphinus delphis,Delphinus delphis unkown,ecoss_db_testing_training_sounds_metadata,40,40,KEEP_ALL
+Globicephala melas,Globicephala melas clicks,ALNITAK CAVANILLES,218,218,KEEP_ALL
+Globicephala melas,glo mel whistles,ALNITAK CAVANILLES,55,55,KEEP_ALL
+Globicephala melas,Globicephala melas,MONISH,410,410,KEEP_ALL
+Globicephala melas,Globicephala melas,archived-watkins,144,144,KEEP_ALL
+Globicephala melas,Globicephala melas,ecoss_db_testing_training_sounds_metadata,26,26,KEEP_ALL
+Grampus griseus,Grampus griseus clciks,ALNITAK CAVANILLES,45,45,KEEP_ALL
+Grampus griseus,Grampus griseus,MONISH,113,113,KEEP_ALL
+Grampus griseus,Grampus griseus,archived-watkins,81,81,KEEP_ALL
+Orcinus orca,Orcinus orca,MONISH,37,37,KEEP_ALL
+Orcinus orca,Orcinus orca,archived-watkins,39,39,KEEP_ALL
+Orcinus orca,Orcinus orca,dclde_2026,21696,887,SUBSAMPLE_887/21696
+Orcinus orca,Orcinus orca,ecoss_db_enhanced4AI_sounds_metadata,15,15,KEEP_ALL
+Orcinus orca,Orcinus orca,ecoss_db_testing_training_sounds_metadata,22,22,KEEP_ALL
+Physeter macrocephalus,Phys macro clicks,ALNITAK CAVANILLES,179,179,KEEP_ALL
+Physeter macrocephalus,Physeter macrocephalus,archived-watkins,875,875,KEEP_ALL
+Physeter macrocephalus,Physeter macrocephalus,ecoss_db_enhanced4AI_sounds_metadata,15,15,KEEP_ALL
+Physeter macrocephalus,Physeter macrocephalus,ecoss_db_testing_training_sounds_metadata,20,20,KEEP_ALL
+Stenella coeruleoalba,stenella clicks,ALNITAK CAVANILLES,15,15,KEEP_ALL
+Stenella coeruleoalba,Stenella coeruleoalba,archived-watkins,85,85,KEEP_ALL
+Stenella coeruleoalba,Stenella coeruleoalba,ecoss_db_enhanced4AI_sounds_metadata,44,44,KEEP_ALL
+Tursiops truncatus,Tursiops truncatus  - whistle,ALNITAK CAVANILLES,3,3,KEEP_ALL
+Tursiops truncatus,Tursiops truncatus - click,ALNITAK CAVANILLES,167,167,KEEP_ALL
+Tursiops truncatus,Tursiops truncatus  - whistle,FREMANTLE,332,0,DROP
+Tursiops truncatus,Tursiops truncatos unknownn,MONISH,28,28,KEEP_ALL
+Tursiops truncatus,Tursiops truncatus  - whistle,adriatic sea,240,147,SUBSAMPLE_147/240
+Tursiops truncatus,Tursiops truncatus - click,adriatic sea,702,73,SUBSAMPLE_73/702
+Tursiops truncatus,Tursiops truncatos unknownn,archived-watkins,24,24,KEEP_ALL
+Tursiops truncatus,Tursiops truncatus  - whistle,DRYAD,2916,220,SUBSAMPLE_220/2916
+Tursiops truncatus,Tursiops truncatos unknownn,ecoss_db_enhanced4AI_sounds_metadata,27,27,KEEP_ALL
+Tursiops truncatus,Tursiops truncatos unknownn,ecoss_db_testing_training_sounds_metadata,19,19,KEEP_ALL
+Tursiops truncatus,Turisops truncatus feeding buzzes,oltremare,285,73,SUBSAMPLE_73/285
+Tursiops truncatus,Tursiops truncatus  - whistle,oltremare,1629,73,SUBSAMPLE_73/1629
+Tursiops truncatus,Tursiops truncatus - click,oltremare,498,73,SUBSAMPLE_73/498
+Tursiops truncatus,Tursiops truncatus bursting pulses,oltremare,492,73,SUBSAMPLE_73/492
+background,Bottom trawl net background,ALNITAK CAVANILLES,18,18,KEEP_ALL
+background,Fishing aggregating device deep,ALNITAK CAVANILLES,2594,309,SUBSAMPLE_309/2594
+background,boat shallow (50m),ALNITAK CAVANILLES,85,85,KEEP_ALL
+background,motorized boat deep,ALNITAK CAVANILLES,978,309,SUBSAMPLE_309/978
+background,sailing deep,ALNITAK CAVANILLES,233,233,KEEP_ALL
+background,sailing shallow (50m),ALNITAK CAVANILLES,440,309,SUBSAMPLE_309/440
+background,Bottom trawl net background,adriatic sea,238,238,KEEP_ALL
+background,Ship Cargo,dclde_2026,123447,309,SUBSAMPLE_309/123447
+background,boat shallow (50m),dclde_2026,5511,309,SUBSAMPLE_309/5511
+background,motorized boat deep,dclde_2026,6377,309,SUBSAMPLE_309/6377
+background,towed array,dclde_2026,15390,309,SUBSAMPLE_309/15390
+background,Chains,ecoss_db_annotated_sounds_metadata,45,45,KEEP_ALL
+background,Wave energy convertor,ecoss_db_annotated_sounds_metadata,241,241,KEEP_ALL
+background,Hammer,ecoss_db_enhanced4AI_sounds_metadata,25,25,KEEP_ALL
+background,Glider ambient,ecoss_db_testing_training_sounds_metadata,2300,309,SUBSAMPLE_309/2300
+background,Hammer,ecoss_db_testing_training_sounds_metadata,8,8,KEEP_ALL
+background,Rainfall,ecoss_db_testing_training_sounds_metadata,32,32,KEEP_ALL
+background,Ship Cargo,ecoss_db_testing_training_sounds_metadata,7657,309,SUBSAMPLE_309/7657
+background,Ship passangership,ecoss_db_testing_training_sounds_metadata,9211,309,SUBSAMPLE_309/9211
+background,Ship tanker,ecoss_db_testing_training_sounds_metadata,8624,309,SUBSAMPLE_309/8624
+background,Ship tug,ecoss_db_testing_training_sounds_metadata,8085,309,SUBSAMPLE_309/8085

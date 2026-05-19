@@ -1,0 +1,7 @@
+,Balaenoptera_physalus,Delphinidae_unknown,Delphinus_delphis,Globicephala_melas,Grampus_griseus,Orcinus_orca,Physeter_macrocephalus,Stenella_coeruleoalba,Tursiops_truncatus,background
+Delphinidae_unknown,0,6,4,0,0,0,0,0,0,0
+Orcinus_orca,0,0,0,0,0,1,0,0,0,0
+Physeter_macrocephalus,0,0,0,0,0,0,1,0,0,0
+Stenella_coeruleoalba,0,0,0,0,0,0,0,12,0,0
+Tursiops_truncatus,0,0,0,0,0,0,0,0,1,0
+background,1,0,0,0,0,0,0,0,0,0

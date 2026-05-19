@@ -1,0 +1,163 @@
+{
+  "tiers": [
+    "label_t1",
+    "label_t2",
+    "label_t3",
+    "label_t4",
+    "label_t5"
+  ],
+  "tier_semantics": {
+    "label_t1": "binary mammal vs non_mammal",
+    "label_t2": "coarse group: odontocete/mysticete/pinniped/anthropogenic/background",
+    "label_t3": "call type: click/whistle/burst_pulse/feeding_buzz/pulsed_call/song/background",
+    "label_t4": "species (binomial); NaN for non-mammal rows",
+    "label_t5": "joint species_call (e.g. Tursiops_truncatus_whistle); restricted to T5_ELIGIBLE_DATASETS"
+  },
+  "classes_per_tier": {
+    "label_t1": [
+      "mammal",
+      "non_mammal"
+    ],
+    "label_t2": [
+      "anthropogenic",
+      "background",
+      "mysticete",
+      "odontocete"
+    ],
+    "label_t3": [
+      "background",
+      "burst_pulse",
+      "burst_pulse+whistle",
+      "click",
+      "click+whistle",
+      "feeding_buzz",
+      "whistle"
+    ],
+    "label_t4": [
+      "Balaenoptera_acutorostrata",
+      "Balaenoptera_physalus",
+      "Delphinidae_unknown",
+      "Delphinus_delphis",
+      "Globicephala_melas",
+      "Grampus_griseus",
+      "Orcinus_orca",
+      "Physeter_macrocephalus",
+      "Stenella_coeruleoalba",
+      "Tursiops_truncatus"
+    ],
+    "label_t5": [
+      "Globicephala_melas_click",
+      "Globicephala_melas_click+whistle",
+      "Globicephala_melas_whistle",
+      "Grampus_griseus_click",
+      "Physeter_macrocephalus_click",
+      "Stenella_coeruleoalba_click",
+      "Tursiops_truncatus_burst_pulse",
+      "Tursiops_truncatus_click",
+      "Tursiops_truncatus_click+whistle",
+      "Tursiops_truncatus_feeding_buzz",
+      "Tursiops_truncatus_whistle"
+    ]
+  },
+  "t5_eligible_datasets": [
+    "ALNITAK_CAVANILLES",
+    "Adriatic_Sea",
+    "OLTREMARE"
+  ],
+  "dataset_species_table": {
+    "FREMANTLE": {
+      "species": "Tursiops_truncatus",
+      "note": "332 whistles, Fremantle Inner Harbour AU"
+    },
+    "DOLPHINFREE": {
+      "species": "Delphinus_delphis",
+      "note": "1150 whistles, Iroise Sea FR"
+    },
+    "Adriatic_Sea": {
+      "species": "Tursiops_truncatus",
+      "note": "clicks + whistles, Adriatic IT/HR"
+    },
+    "OLTREMARE": {
+      "species": "Tursiops_truncatus",
+      "note": "pool recordings, Oltremare IT"
+    },
+    "DRYAD": {
+      "species": "Tursiops_truncatus",
+      "note": "imms + of + swsfc, all T. truncatus"
+    },
+    "DCLDE_2026": {
+      "species": "Orcinus_orca",
+      "note": "KW = killer whale; everything else is non-mammal"
+    },
+    "ALNITAK_CAVANILLES": {
+      "species": "multi",
+      "note": "species_set column"
+    },
+    "ECOSS_annot": {
+      "species": "multi",
+      "note": "species encoded in label"
+    },
+    "ECOSS_enhanced": {
+      "species": "multi",
+      "note": "species encoded in label"
+    },
+    "ECOSS_testtrain": {
+      "species": "multi",
+      "note": "species encoded in label"
+    },
+    "MONISH": {
+      "species": "multi",
+      "note": "species column"
+    },
+    "WATKINS": {
+      "species": "multi",
+      "note": "species column"
+    }
+  },
+  "species_taxonomy": {
+    "Tursiops_truncatus": {
+      "group": "odontocete",
+      "genus": "Tursiops"
+    },
+    "Delphinus_delphis": {
+      "group": "odontocete",
+      "genus": "Delphinus"
+    },
+    "Grampus_griseus": {
+      "group": "odontocete",
+      "genus": "Grampus"
+    },
+    "Orcinus_orca": {
+      "group": "odontocete",
+      "genus": "Orcinus"
+    },
+    "Globicephala_melas": {
+      "group": "odontocete",
+      "genus": "Globicephala"
+    },
+    "Globicephala_macrorhynchus": {
+      "group": "odontocete",
+      "genus": "Globicephala"
+    },
+    "Stenella_coeruleoalba": {
+      "group": "odontocete",
+      "genus": "Stenella"
+    },
+    "Physeter_macrocephalus": {
+      "group": "odontocete",
+      "genus": "Physeter"
+    },
+    "Delphinidae_unknown": {
+      "group": "odontocete",
+      "genus": "Delphinidae_unknown"
+    },
+    "Balaenoptera_physalus": {
+      "group": "mysticete",
+      "genus": "Balaenoptera"
+    },
+    "Balaenoptera_acutorostrata": {
+      "group": "mysticete",
+      "genus": "Balaenoptera"
+    }
+  }
+}

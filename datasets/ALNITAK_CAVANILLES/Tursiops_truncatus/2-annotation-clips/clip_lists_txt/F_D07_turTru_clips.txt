@@ -1,0 +1,10 @@
+F_D07_sel_01_Tursiops truncatus_clicks.wav
+F_D07_sel_02_Tursiops truncatus_whistles.wav
+F_D07_sel_03_Tursiops truncatus_whistles.wav
+F_D07_sel_04_Tursiops truncatus_whistles.wav
+F_D07_sel_05_Tursiops truncatus_whistles.wav
+F_D07_sel_06_Tursiops truncatus_whistles.wav
+F_D07_sel_07_Tursiops truncatus_whistles.wav
+F_D07_sel_08_Tursiops truncatus_whistles.wav
+F_D07_sel_09_Tursiops truncatus_whistles.wav
+F_D07_sel_10_Tursiops truncatus_whistles.wav

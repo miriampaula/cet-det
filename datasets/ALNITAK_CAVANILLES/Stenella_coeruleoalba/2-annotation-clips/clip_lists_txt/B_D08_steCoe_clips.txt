@@ -1,0 +1,8 @@
+B_D08_sel_01_steCoe_clicks.wav
+B_D08_sel_02_steCoe_whistles.wav
+B_D08_sel_03_steCoe_whistles.wav
+B_D08_sel_04_steCoe_whistles.wav
+B_D08_sel_05_steCoe_whistles.wav
+B_D08_sel_06_steCoe_whistles.wav
+B_D08_sel_07_steCoe_whistles.wav
+B_D08_sel_08_steCoe_whistles.wav

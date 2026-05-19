@@ -1,0 +1,6 @@
+experiment,macro_f1,macro_f1_full,accuracy,balanced_acc,note
+Exp 1a - flat joint (within-corpus),0.7313158955114403,0.7313158955114403,0.8576874905377321,0.8925093136643455,"one head over {bg, all species}"
+Exp 1b - hierarchical cascade (within-corpus),0.7358367960225803,0.7358367960225803,0.9107725339609397,0.8115679501274177,binary detector -> species head
+Exp 2 - joint LODO (mean across folds),0.4416753118257928,0.10737919718533423,0.5341918667117409,0.4501575989339259,mean per-fold; see exp2_joint_lodo_summary.csv
+Exp 2 - joint LODO species-restricted (mean),0.4014384776226676,,,0.33864207804344626,mammal-test-rows only - apples-to-apples vs Exp 3
+Exp 3 - species LODO (mean across folds),0.2089476064277075,0.11518127554812767,0.1931353328289866,0.29451966347545777,mean per-fold; see exp3_species_lodo_summary.csv

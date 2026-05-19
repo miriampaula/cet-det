@@ -1,0 +1,2 @@
+Selection	View	Channel	Begin File	End File	Begin Time (s)	End Time (s)	Delta Time (s)	Begin Date Time	End Date Time	Low Freq (Hz)	High Freq (Hz)	Peak Freq (Hz)	signalType	species	quality	deploymentType	deploymentID	selectionID
+1	Spectrogram 1	1	B_D10_20240512_092600.WAV	B_D10_20240512_093300.WAV	1.84539985656738	435.781899929047	433.936500072479	2024-05-12 09:26:01.8454	2024-05-12 09:33:50.7819	10105.263	94421.053	21750	clicks	Physeter macrocephalus	medium	boat_based_surveys	B_D10	B_D10_sel_01_phyMac

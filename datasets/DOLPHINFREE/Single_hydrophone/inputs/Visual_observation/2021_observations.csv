@@ -1,0 +1,48 @@
+audio_file,datetime_utc,observers,sonar_noise,signal,group_size,distance,fishing_net_type,ID_group,ID_sequence,behaviour,behavioural_event,activation_sequence,fishing_net,group_clustering,direction,speed,diving_time,special_observations
+SCW6070_20210709_070500.wav,2021-07-09 07:05:00,Jerome_Spitz,1,DC,6,5,absent,1,1,travelling,active_surfacing,before,absent,scattered,variable,slow,normal,Presence of calfs
+SCW6070_20210709_073400.wav,2021-07-09 07:34:00,Jerome_Spitz,1,DC,6,20,absent,2,2,travelling,active_surfacing,before,absent,compact,continuous,slow,normal,"no reaction, animals following a route"
+SCW6070_20210709_085500.wav,2021-07-09 08:55:00,Jerome_Spitz,1,DC,14,75,absent,4,4,travelling,active_surfacing,before,absent,compact,continuous,slow,normal,1 sailing boat at 1km
+SCW6070_20210709_095300.wav,2021-07-09 09:53:00,Jerome_Spitz,1,DC,6,75,absent,5,5,travelling,active_surfacing,before,absent,compact,variable,slow,normal,animals keeping their distances to the boat
+SCW6070_20210709_102700.wav,2021-07-09 10:27:00,Jerome_Spitz,1,DC,14,50,large_net,6,NA,travelling,active_surfacing,control,present,scattered,variable,slow,normal,
+SCW6070_20210709_102800.wav,2021-07-09 10:28:00,Jerome_Spitz,1,DC,14,50,large_net,6,NA,travelling,active_surfacing,control,present,scattered,variable,slow,normal,animals out of range ?
+SCW6070_20210709_102900.wav,2021-07-09 10:29:00,Jerome_Spitz,1,DC,14,50,large_net,6,NA,travelling,active_surfacing,control,present,scattered,variable,slow,normal,
+SCW6070_20210709_103000.wav,2021-07-09 10:30:00,Jerome_Spitz,1,DC,14,50,large_net,6,NA,travelling,active_surfacing,control,present,scattered,variable,slow,normal,
+SCW6070_20210709_104100.wav,2021-07-09 10:41:00,Jerome_Spitz,1,DC,15,50,large_net,7,NA,foraging,active_surfacing,control,present,scattered,variable,fast,long,several groups foraging
+SCW6070_20210709_104200.wav,2021-07-09 10:42:00,Jerome_Spitz,1,DC,15,50,large_net,7,NA,foraging,active_surfacing,control,present,scattered,variable,fast,long,
+SCW6070_20210709_104300.wav,2021-07-09 10:43:00,Jerome_Spitz,1,DC,20,50,large_net,7,NA,foraging,active_surfacing,control,present,scattered,variable,fast,long,school of sardines + seabirds
+SCW6070_20210709_111100.wav,2021-07-09 11:11:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,"Lunch time, no visual monitoring"
+SCW6070_20210709_111200.wav,2021-07-09 11:12:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111300.wav,2021-07-09 11:13:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111400.wav,2021-07-09 11:14:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111500.wav,2021-07-09 11:15:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111600.wav,2021-07-09 11:16:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111700.wav,2021-07-09 11:17:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111800.wav,2021-07-09 11:18:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_111900.wav,2021-07-09 11:19:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112000.wav,2021-07-09 11:20:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112100.wav,2021-07-09 11:21:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112200.wav,2021-07-09 11:22:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112300.wav,2021-07-09 11:23:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112400.wav,2021-07-09 11:24:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112500.wav,2021-07-09 11:25:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112600.wav,2021-07-09 11:26:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112700.wav,2021-07-09 11:27:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112800.wav,2021-07-09 11:28:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_112900.wav,2021-07-09 11:29:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113000.wav,2021-07-09 11:30:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113100.wav,2021-07-09 11:31:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113200.wav,2021-07-09 11:32:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113300.wav,2021-07-09 11:33:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113400.wav,2021-07-09 11:34:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113500.wav,2021-07-09 11:35:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113600.wav,2021-07-09 11:36:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,
+SCW6070_20210709_113700.wav,2021-07-09 11:37:00,Jerome_Spitz,1,DC,30,50,large_net,NA,NA,NA,NA,control,present,NA,NA,NA,NA,"At 11:38, we noticed of a dolphin caught in the unattended fishing net. No group in visual range. Potential entanglement acoustic recording made with TETRA."
+SCW6070_20210709_120800.wav,2021-07-09 12:08:00,Jerome_Spitz,1,DC,12,5,absent,8,7,travelling,active_surfacing,before,absent,scattered,variable,slow,long,Animals far away from hydrophone. Fishing boat at 1 km (motor noise).
+SCW6070_20210711_055700.wav,2021-07-11 05:57:00,Jerome_Spitz,0,DC70,10,15,absent,9,8,travelling,active_surfacing,control,absent,scattered,variable,slow,long,Very mobile and scattered dolphins
+SCW6070_20210711_055800.wav,2021-07-11 05:58:00,Jerome_Spitz,0,DC70,10,15,absent,9,8,travelling,active_surfacing,control,absent,scattered,variable,slow,long,
+SCW6070_20210711_055900.wav,2021-07-11 05:59:00,Jerome_Spitz,0,DC70,10,15,absent,9,8,travelling,active_surfacing,control,absent,scattered,variable,slow,long,
+SCW6070_20210711_060000.wav,2021-07-11 06:00:00,Jerome_Spitz,0,DC70,10,30,absent,9,8,travelling,active_surfacing,control,absent,scattered,variable,slow,long,Dolphins leaving the zone at boat’s stop
+SCW6070_20210711_073300.wav,2021-07-11 07:33:00,Jerome_Spitz,1,DC70,5,20,absent,10,9,foraging,active_surfacing,before,absent,compact,variable,slow,long,Seabirds + school of fishes. 2 fishing boats at 1 km (motor noise).
+SCW6070_20210718_090500.wav,2021-07-18 09:05:00,Helene_Peltier,0,DC70,12,10,absent,11,10,travelling,active_surfacing,before,absent,compact,variable,slow,normal,
+SCW6070_20210718_091100.wav,2021-07-18 09:11:00,Helene_Peltier,0,DC70,12,20,absent,11,11,travelling,active_surfacing,before,absent,compact,variable,slow,normal,
+SCW6070_20210718_091600.wav,2021-07-18 09:16:00,Helene_Peltier,0,DC70,12,50,absent,11,12,travelling,active_surfacing,before,absent,compact,variable,slow,normal,

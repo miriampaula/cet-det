@@ -1,0 +1,122 @@
+{
+    "DATA_COLLECTION_NAME": "NEFSC_SBNMS_200903_NOPP6_CH10",
+    "PUBLISH_DATE": "2022-04-06",
+    "PROJECT_NAME": "[\"DCLDE_2013\", \"NEFSC_Baleen\"]",
+    "DEPLOYMENT_NAME": "",
+    "DEPLOYMENT_ALIAS": "NOPP6",
+    "SITE": "10",
+    "SITE_ALIASES": [],
+    "TITLE": "DCLDE 2013 NOAA NEFSC Baleen Whale (including North Atlantic Right Whale) Annotations",
+    "ABSTRACT": "This dataset is a compilation of 1 week of acoustic data, collected in the Stellwagen Bank National Marine Sanctuary within the Western North Atlantic Ocean. The dataset was manually annotated for the presence of baleen whale calls in the western North Atlantic. It was originally part of the 2013 DCLDE (Detection, Classification, Localization, and Density Estimation) conference datasets, analyzed for North Atlantic right whale upcalls, and was recently re-analyzed for all baleen whale species and so all log files were from the same site (site 10, corresponds to channel 10 in multichannel data files) for the entire week of data.  Each day of data was manually browsed in Raven 1.5, and anotated for all North Atlantic right whale (RIWH) upcalls, humpback whale (HUWH) song, sei whale (SEWH) downsweeps, fin whale (FIWH) 20-Hz pulses, minke whale (MIWH) pulse trains, and blue whale (BLWH) A/B/AB calls (for multichannel data, only one channel was analyzed and logged: channel 10).  In the 'Species' field, each single call is identified by the species abbreviations above;  where 'Species' = HUWH-MULTIPLE; multiple humpback whale vocalizations occur within that detection selection.  In the 'Detection_Confidence' field, a definite upcall is marked as 'Detected'; Possible or unknown detections ( i.e. a call could not be definitely attributed to the species marked), is marked as 'Possibly_Detected'. Acoustic data and analysis provided by NOAA Northeast Fisheries Science Center's Passive Acoustics Branch; North Atlantic right whale upcalls annotated by Nicole Pegg and updated by Alexandra Carroll (Naval Undersea Warfare Center), calls for all other baleen whale species were annotated by Alexandra Carroll.",
+    "PURPOSE": "Baleen whale detections from the NOAA NEFSC's SBNMS_10_200903_CH10 data collection for the DCLDE 2013 workshop",
+    "QUALITY_DETAILS": {
+        "analyst": "Genevieve Davis",
+        "analyst_uuid": "0903f071-fa42-4a75-b237-779f7658ab0a",
+        "quality_details": [
+            {
+                "quality": "Good",
+                "low_freq": "0",
+                "high_freq": "1000",
+                "start": "2003-03-28T00:00:00",
+                "end": "2009-04-04T00:00:00",
+                "comments": "",
+                "channels": "1"
+            }
+        ],
+        "method": "",
+        "objectives": "",
+        "abstract": ""
+    },
+    "PLATFORM_NAME": "Popup",
+    "INSTRUMENT_TYPE": "MARU",
+    "INSTRUMENT_ID": "",
+    "DEPLOYMENT": {
+        "DEPLOYMENT_TIME": "",
+        "RECOVERY_TIME": "",
+        "AUDIO_START": "",
+        "AUDIO_END": "",
+        "DEPLOY_TYPE": "Stationary Marine",
+        "SEA_AREA": "North Atlantic Ocean",
+        "DEPLOY_LAT": "42.066",
+        "DEPLOY_LON": "-70.2719",
+        "DEPLOY_SHIP": "",
+        "DEPLOY_INSTRUMENT_DEPTH": "-60",
+        "DEPLOY_BOTTOM_DEPTH": "-62",
+        "RECOVER_LAT": "42.066",
+        "RECOVER_LON": "-70.2719",
+        "RECOVER_SHIP": "",
+        "RECOVER_INSTRUMENT_DEPTH": "-60",
+        "RECOVER_BOTTOM_DEPTH": "-62"
+    },
+    "DATASET_DETAILS": {
+        "TYPE": "Product",
+        "SUB_TYPE": "Detections",
+        "SOURCE_PATH": "/Volumes/Fortress/NEFSC_NRW/detections_files/NEFSC_SBNMS_200903_NOPP6_CH10",
+        "DATA_FILES": "/Volumes/Fortress/NEFSC_NRW/detections_files/NEFSC_SBNMS_200903_NOPP6_CH10",
+        "ANALYSIS_TIME_ZONE": "-5",
+        "ANALYSIS_EFFORT": "3600",
+        "MIN_ANALYSIS_FREQUENCY": "0",
+        "MAX_ANALYSIS_FREQUENCY": "1000",
+        "ANALYSIS_SAMPLE_RATE": "2000",
+        "SOFTWARE_NAME": "Raven",
+        "SOFTWARE_VERSION": "1.5",
+        "PROTOCOL_REFERENCE": "",
+        "PROCESSING_STATEMENT": "Each day of data was manually browsed in Raven 1.5, and all North Atlantic right whale upcalls were logged. In the \u201cDetection_Confidence\u201d field, a definite upcall is marked as \u201cDetected\u201d; possible or unknown detections (i.e. a call could not be definitely attributed to a North Atlantic right whale), is marked as \u201cPossibly_Detected\u201d. ",
+        "SOFTWARE_STATEMENT": "Raven is a software program for the acquisition, visualization, measurement, and analysis of sounds created by the K. Lisa Yang Center for Conservation Bioacoustics at Cornell University.",
+        "ANALYSIS_START": "2003-03-28T00:00:00",
+        "ANALYSIS_END": "2009-04-04T00:00:00",
+        "SPECIES": "North Atlantic right whale",
+        "SCIENTIFIC_NAME": "Eubalaena glacialis"
+    },
+    "CALIBRATION_INFO": {
+        "CAL_STATE": "Calibration applied before processing",
+        "CAL_DOCS_PATH": "",
+        "SENSITIVITY": "",
+        "FREQUENCY": "",
+        "GAIN": "",
+        "COMMENT": ""
+    },
+    "SCIENTISTS": [
+        {
+            "name": "Sofie Van Parijs",
+            "uuid": "31e35a84-a6f0-4350-a5d6-ff5fa87918c9"
+        },
+        {
+            "name": "Genevieve Davis",
+            "uuid": "0903f071-fa42-4a75-b237-779f7658ab0a"
+        },
+        {
+            "name": "Doug Gillespie",
+            "uuid": "4969f274-a4e0-48d3-a6fd-e0fb36b9de54"
+        }
+    ],
+    "SPONSORS": [
+        {
+            "name": "NOAA NEFSC",
+            "uuid": "ebd76260-2bad-4f23-ac30-62726422f231"
+        }
+    ],
+    "FUNDERS": [
+        {
+            "name": "NOPP",
+            "uuid": "9cbfe5cd-b7d7-48b0-abf3-feab8560a4b6"
+        },
+        {
+            "name": "NOAA NMFS",
+            "uuid": "34fa8648-9091-4426-bcd1-1f95d29811ad"
+        }
+    ],
+    "METADATA_AUTHOR": {
+        "NAME": "Genevieve Davis",
+        "UUID": "0903f071-fa42-4a75-b237-779f7658ab0a",
+        "ORGANIZATION": "NOAA Northeast Fisheries Science Center",
+        "POSITION": "Scientist",
+        "STREET": "",
+        "CITY": "",
+        "STATE": "",
+        "ZIP": "",
+        "COUNTRY": "USA",
+        "EMAIL": "",
+        "PHONE": ""
+    }
+}
