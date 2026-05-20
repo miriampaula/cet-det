@@ -1,0 +1,75 @@
+{
+  "Balaenoptera_physalus": {
+    "precision": 1.0,
+    "recall": 1.0,
+    "f1-score": 1.0,
+    "support": 50.0
+  },
+  "Delphinids": {
+    "precision": 0.6741573033707865,
+    "recall": 0.9473684210526315,
+    "f1-score": 0.787746170678337,
+    "support": 190.0
+  },
+  "Delphinus_delphis": {
+    "precision": 0.9238095238095239,
+    "recall": 0.9509803921568627,
+    "f1-score": 0.9371980676328503,
+    "support": 102.0
+  },
+  "Globicephala_melas": {
+    "precision": 0.7435897435897436,
+    "recall": 0.9666666666666667,
+    "f1-score": 0.8405797101449275,
+    "support": 30.0
+  },
+  "Grampus_griseus": {
+    "precision": 0.5185185185185185,
+    "recall": 0.875,
+    "f1-score": 0.6511627906976745,
+    "support": 16.0
+  },
+  "Orcinus_orca": {
+    "precision": 0.9029126213592233,
+    "recall": 0.9029126213592233,
+    "f1-score": 0.9029126213592233,
+    "support": 103.0
+  },
+  "Physeter_macrocephalus": {
+    "precision": 0.6346153846153846,
+    "recall": 0.6470588235294118,
+    "f1-score": 0.6407766990291263,
+    "support": 51.0
+  },
+  "Stenella_coeruleoalba": {
+    "precision": 0.23809523809523808,
+    "recall": 0.6666666666666666,
+    "f1-score": 0.3508771929824561,
+    "support": 15.0
+  },
+  "Tursiops_truncatus": {
+    "precision": 0.9491525423728814,
+    "recall": 0.6829268292682927,
+    "f1-score": 0.7943262411347518,
+    "support": 82.0
+  },
+  "background": {
+    "precision": 0.9012738853503185,
+    "recall": 0.6754176610978521,
+    "f1-score": 0.772169167803547,
+    "support": 419.0
+  },
+  "accuracy": 0.7986767485822306,
+  "macro avg": {
+    "precision": 0.7486124761081618,
+    "recall": 0.8314998081797607,
+    "f1-score": 0.7677748661462893,
+    "support": 1058.0
+  },
+  "weighted avg": {
+    "precision": 0.8386800825105692,
+    "recall": 0.7986767485822306,
+    "f1-score": 0.8038926029403625,
+    "support": 1058.0
+  }
+}

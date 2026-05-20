@@ -1,0 +1,62 @@
+{
+  "v6_low_lr_nodrop": {
+    "best_val_macro_f1": 0.8252223214593204,
+    "best_epoch": 22,
+    "n_epochs": 30,
+    "config": {
+      "name": "v6_low_lr_nodrop",
+      "head_dropout": 0.2,
+      "head_units": 256,
+      "lr": 0.0003,
+      "l2": 0.0,
+      "patience": 12,
+      "lr_factor": 0.3,
+      "lr_patience": 4
+    }
+  },
+  "v7_very_low_lr": {
+    "best_val_macro_f1": 0.8115547109312837,
+    "best_epoch": 30,
+    "n_epochs": 30,
+    "config": {
+      "name": "v7_very_low_lr",
+      "head_dropout": 0.3,
+      "head_units": 256,
+      "lr": 0.0001,
+      "l2": 0.0,
+      "patience": 15,
+      "lr_factor": 0.5,
+      "lr_patience": 5
+    }
+  },
+  "v8_wide_head": {
+    "best_val_macro_f1": 0.8234327860540971,
+    "best_epoch": 20,
+    "n_epochs": 30,
+    "config": {
+      "name": "v8_wide_head",
+      "head_dropout": 0.3,
+      "head_units": 512,
+      "lr": 0.0003,
+      "l2": 1e-05,
+      "patience": 12,
+      "lr_factor": 0.3,
+      "lr_patience": 4
+    }
+  },
+  "v9_low_lr_l2": {
+    "best_val_macro_f1": 0.8229179065215376,
+    "best_epoch": 29,
+    "n_epochs": 30,
+    "config": {
+      "name": "v9_low_lr_l2",
+      "head_dropout": 0.3,
+      "head_units": 256,
+      "lr": 0.0003,
+      "l2": 1e-05,
+      "patience": 15,
+      "lr_factor": 0.5,
+      "lr_patience": 5
+    }
+  }
+}
