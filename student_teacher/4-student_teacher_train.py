@@ -59,7 +59,11 @@ N_EPOCHS      = PHASE1_EPOCHS + PHASE2_EPOCHS + PHASE3_EPOCHS
 LAMBDA_MAX    = 0.5
 LR            = 3e-4
 WEIGHT_DECAY  = 1e-4
-PATIENCE      = 10
+
+# Early stopping — only active from Phase 3 onwards.
+# Phase 2 val_f1 wobble during λ ramp is expected; stopping there is a bug.
+PATIENCE               = 15
+EARLY_STOP_START_EPOCH = PHASE1_EPOCHS + PHASE2_EPOCHS  # epoch 40 (0-indexed)
 
 TEACHER_DIM   = 1536
 
@@ -273,6 +277,8 @@ weights_path = RUNS_DIR / 'best_model.pt'
 
 print(f"\nTraining for {N_EPOCHS} epochs "
       f"(phase1={PHASE1_EPOCHS}, phase2={PHASE2_EPOCHS}, phase3={PHASE3_EPOCHS})")
+print(f"Early stopping active from epoch {EARLY_STOP_START_EPOCH + 1} (Phase 3) "
+      f"with patience={PATIENCE}")
 
 for epoch in range(N_EPOCHS):
     lam = get_lambda(epoch)
@@ -359,6 +365,9 @@ for epoch in range(N_EPOCHS):
           f"  λ={lam:.3f}")
 
     # ── Checkpoint & early stopping ───────────────────────────────────────────
+    # Always save best checkpoint regardless of phase.
+    # Early stopping counter only runs from Phase 3 onwards — val_f1 wobble
+    # during the Phase 2 λ ramp is expected behaviour, not stagnation.
     if val_f1 > best_f1:
         best_f1    = val_f1
         best_epoch = epoch + 1
@@ -372,16 +381,18 @@ for epoch in range(N_EPOCHS):
             'dataset_enc':  dataset_enc,
         }, weights_path)
         print(f"    ✓ saved best ({best_f1:.4f})")
-    else:
+    elif epoch >= EARLY_STOP_START_EPOCH:
+        # Only count patience during Phase 3
         wait += 1
         if wait >= PATIENCE:
             print(f"  Early stop at epoch {epoch+1}")
             break
+    # Phase 1 / Phase 2: never increment wait — λ ramp causes expected dip
 
 print(f"\nBest val_macro_f1: {best_f1:.4f} @ epoch {best_epoch}")
 
 # ── Test ──────────────────────────────────────────────────────────────────────
-checkpoint = torch.load(weights_path)
+checkpoint = torch.load(weights_path, weights_only=False)
 model.load_state_dict(checkpoint['model_state'])
 model.eval()
 

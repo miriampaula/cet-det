@@ -14,7 +14,7 @@ from umap import UMAP
 from sklearn.manifold import TSNE
 
 # ── Paths ────────────────────────────────────────────────────────────────────
-EMB_PATH  = Path('/data2/mromaniuc/cet-det/student_teacher/X_teacher_emb.npy')
+EMB_PATH  = Path('/data2/mromaniuc/cet-det/student_teacher/runs_student/X_student_emb.npy')
 META_PATH = Path('/data2/mromaniuc/cet-det/cet_perchv2/meta_train.parquet')
 OUT_DIR   = Path('/data2/mromaniuc/cet-det/student_teacher/visualisations')
 OUT_DIR.mkdir(parents=True, exist_ok=True)
@@ -129,13 +129,13 @@ plt.suptitle('Perch V2 teacher embeddings — 11,769 samples',
              fontsize=13, y=1.01)
 plt.tight_layout()
 
-out_path = OUT_DIR / 'teacher_embeddings_pca_umap_tsne.png'
+out_path = OUT_DIR / 'student_embeddings_pca_umap_tsne.png'
 plt.savefig(out_path, dpi=150, bbox_inches='tight')
 plt.close()
 print(f"\nSaved → {out_path}")
 
 # ── Also save the 2D coords for later reuse ──────────────────────────────────
-np.save(OUT_DIR / 'X_pca2.npy',  X_pca2)
-np.save(OUT_DIR / 'X_umap2.npy', X_umap)
-np.save(OUT_DIR / 'X_tsne2.npy', X_tsne)
+np.save(OUT_DIR / 'X_pca2_student.npy',  X_pca2)
+np.save(OUT_DIR / 'X_umap2_student.npy', X_umap)
+np.save(OUT_DIR / 'X_tsne2_student.npy', X_tsne)
 print("2D coordinates saved for reuse.")
