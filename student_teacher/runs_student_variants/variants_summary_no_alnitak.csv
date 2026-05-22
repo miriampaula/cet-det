@@ -1,0 +1,2 @@
+variant,note,holdout_dataset,lambda_max,alpha_distil,use_tanh,domain_head_size,n_augs,best_val_macro_f1,test_macro_f1,best_epoch,training_min
+v09_best_combo_no_alnitak,v09 retrained without ALNITAK — honest LODO check,ALNITAK_CAVANILLES,0.2,5.0,False,small,5,0.8076918239967801,0.9263601863854344,9,20.10994548400243
