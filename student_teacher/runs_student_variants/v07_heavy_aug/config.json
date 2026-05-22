@@ -1,0 +1,15 @@
+{
+  "lambda_max": 0.5,
+  "alpha_distil": 2.0,
+  "beta_class": 1.0,
+  "gamma_adv": 1.0,
+  "use_tanh": true,
+  "domain_head_size": "small",
+  "aug_brightness": true,
+  "aug_contrast": true,
+  "aug_time_mask": true,
+  "aug_freq_mask": true,
+  "aug_cutout": true,
+  "note": "all five augmentations including cutout",
+  "variant": "v07_heavy_aug"
+}

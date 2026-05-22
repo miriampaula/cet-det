@@ -1,0 +1,10 @@
+variant,note,lambda_max,alpha_distil,use_tanh,domain_head_size,n_augs,best_val_macro_f1,test_macro_f1,best_epoch,training_min
+v01_baseline,reference: SpecAugment (time+freq mask) + light colour jitter,0.5,2.0,True,small,4,0.8508639968685087,0.8206758498054676,7,25.897359752655028
+v02_low_lambda,tests whether GRL@0.5 over-collapses species clusters,0.2,2.0,True,small,4,0.8571906222161653,0.8229689820159027,16,25.92714927196503
+v03_high_lambda,confirms direction; expect species cluster collapse,1.0,2.0,True,small,4,0.8510228089844123,0.7712284536480328,26,25.936153650283813
+v04_strong_distil,preserve Perch geometry harder against GRL pull,0.5,5.0,True,small,4,0.8402453928524162,0.8044445467517416,46,28.242951242129006
+v05_no_tanh,"remove [-1,1] squashing; let magnitudes match Perch",0.5,2.0,False,small,4,0.8610818336629693,0.8405950645550029,44,27.758066777388255
+v06_no_aug,clean signal — does any augment hurt distillation?,0.5,2.0,True,small,0,0.8372690437754787,0.7975848498135119,31,25.857334899902344
+v07_heavy_aug,all five augmentations including cutout,0.5,2.0,True,small,5,0.8583782931867597,0.8093102438673224,25,25.91004458665848
+v08_big_domain,stronger adversary forces backbone to do real work,0.5,2.0,True,big,4,0.8567017576843003,0.8206297045120194,13,25.979263309637705
+v09_best_combo,educated guess: low λ + strong distil + no tanh + heavy aug,0.2,5.0,False,small,5,0.8550649600163567,0.810485408092412,12,25.87612963517507

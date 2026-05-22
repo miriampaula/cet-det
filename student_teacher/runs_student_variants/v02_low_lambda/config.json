@@ -1,0 +1,15 @@
+{
+  "lambda_max": 0.2,
+  "alpha_distil": 2.0,
+  "beta_class": 1.0,
+  "gamma_adv": 1.0,
+  "use_tanh": true,
+  "domain_head_size": "small",
+  "aug_brightness": true,
+  "aug_contrast": true,
+  "aug_time_mask": true,
+  "aug_freq_mask": true,
+  "aug_cutout": false,
+  "note": "tests whether GRL@0.5 over-collapses species clusters",
+  "variant": "v02_low_lambda"
+}

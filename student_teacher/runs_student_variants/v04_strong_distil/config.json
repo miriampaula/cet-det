@@ -1,0 +1,15 @@
+{
+  "lambda_max": 0.5,
+  "alpha_distil": 5.0,
+  "beta_class": 1.0,
+  "gamma_adv": 1.0,
+  "use_tanh": true,
+  "domain_head_size": "small",
+  "aug_brightness": true,
+  "aug_contrast": true,
+  "aug_time_mask": true,
+  "aug_freq_mask": true,
+  "aug_cutout": false,
+  "note": "preserve Perch geometry harder against GRL pull",
+  "variant": "v04_strong_distil"
+}

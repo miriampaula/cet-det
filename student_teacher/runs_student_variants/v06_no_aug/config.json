@@ -1,0 +1,15 @@
+{
+  "lambda_max": 0.5,
+  "alpha_distil": 2.0,
+  "beta_class": 1.0,
+  "gamma_adv": 1.0,
+  "use_tanh": true,
+  "domain_head_size": "small",
+  "aug_brightness": false,
+  "aug_contrast": false,
+  "aug_time_mask": false,
+  "aug_freq_mask": false,
+  "aug_cutout": false,
+  "note": "clean signal \u2014 does any augment hurt distillation?",
+  "variant": "v06_no_aug"
+}

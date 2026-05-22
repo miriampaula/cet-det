@@ -1,0 +1,15 @@
+{
+  "lambda_max": 1.0,
+  "alpha_distil": 2.0,
+  "beta_class": 1.0,
+  "gamma_adv": 1.0,
+  "use_tanh": true,
+  "domain_head_size": "small",
+  "aug_brightness": true,
+  "aug_contrast": true,
+  "aug_time_mask": true,
+  "aug_freq_mask": true,
+  "aug_cutout": false,
+  "note": "confirms direction; expect species cluster collapse",
+  "variant": "v03_high_lambda"
+}
