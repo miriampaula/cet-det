@@ -57,12 +57,8 @@ SPECIES = {
 }
 NON_MAMMAL_JOINT = 'background'
 
-JOINT_LODO_HOLDOUTS = [
-    'ALNITAK_CAVANILLES', 'ECOSS_testtrain', 'ECOSS_enhanced', 'ECOSS_annot',
-    'DCLDE_2026', 'DOLPHINFREE', 'DRYAD',
-    'Adriatic_Sea', 'OLTREMARE', 'MONISH',
-]
-SPECIES_LODO_HOLDOUTS = ['WATKINS', 'MONISH', 'ECOSS_testtrain', 'ALNITAK_CAVANILLES']
+JOINT_LODO_HOLDOUTS = ['DRYAD']
+SPECIES_LODO_HOLDOUTS = []
 SPECIES_LODO_EXCLUDE  = {
     'WATKINS': {'Balaenoptera_acutorostrata'},
 }
@@ -428,6 +424,8 @@ def evaluate_run(X_all, meta_all, run_name, out_dir, threshold):
     summary2 = pd.DataFrame(rows2).sort_values('test_macro_f1 (test-only)', ascending=False)
     print(f"\n\n{run_name} — EXP 2 OVR SUMMARY")
     print(summary2.to_string(index=False))
+    
+    
     print(f"Average test_macro_f1: {summary2['test_macro_f1 (test-only)'].mean():.3f}")
     summary2.to_csv(run_out / 'exp2_joint_lodo_ovr_summary.csv', index=False)
 
@@ -533,10 +531,17 @@ def evaluate_run(X_all, meta_all, run_name, out_dir, threshold):
         'test_accuracy':              r['test_accuracy'],
         'test_balanced_acc':          r['test_balanced_acc'],
     } for ds, r in results_species.items()]
-    summary3 = pd.DataFrame(rows3).sort_values('test_macro_f1 (test-only)', ascending=False)
+    
+    
+    summary3 = pd.DataFrame(rows3)
+    if not summary3.empty:
+        summary3 = summary3.sort_values('test_macro_f1 (test-only)', ascending=False)
     print(f"\n\n{run_name} — EXP 3 OVR SUMMARY")
     print(summary3.to_string(index=False))
-    print(f"Average test_macro_f1: {summary3['test_macro_f1 (test-only)'].mean():.3f}")
+    
+    
+    exp3_avg = float(summary3['test_macro_f1 (test-only)'].mean()) if not summary3.empty else 0.0
+    print(f"Average test_macro_f1: {exp3_avg:.3f}")
     summary3.to_csv(run_out / 'exp3_species_lodo_ovr_summary.csv', index=False)
 
     for ds, r in results_species.items():
@@ -555,7 +560,7 @@ def evaluate_run(X_all, meta_all, run_name, out_dir, threshold):
         'threshold': threshold,
         'exp1':      _clean(r_e1),
         'exp2_avg_test_macro_f1': float(summary2['test_macro_f1 (test-only)'].mean()),
-        'exp3_avg_test_macro_f1': float(summary3['test_macro_f1 (test-only)'].mean()),
+        'exp3_avg_test_macro_f1': exp3_avg,
         'exp2_per_fold': {ds: _clean(r) for ds, r in results_joint.items()},
         'exp3_per_fold': {ds: _clean(r) for ds, r in results_species.items()},
     }

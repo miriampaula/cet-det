@@ -1,0 +1,2 @@
+variant,note,holdout_dataset,lambda_max,alpha_distil,use_tanh,domain_head_size,n_augs,best_val_macro_f1,test_macro_f1,best_epoch,training_min
+v09_best_combo_no_dryad,v09 retrained without DRYAD — honest LODO check,DRYAD,0.2,5.0,False,small,5,0.8645591397864459,0.731488477683787,8,35.30872671206792

@@ -34,9 +34,8 @@ from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
 
-import timm as _timm
-_ = _timm.create_model('efficientnet_b0', pretrained=True)
-del _
+import timm
+timm.create_model('efficientnet_b0', pretrained=True)  # warm cache
 print("[startup] EfficientNet-B0 weights cached.", flush=True)
 
 from sklearn.metrics import (
@@ -71,7 +70,7 @@ TARGET_SPECIES = 'Tursiops_truncatus'
 # ── Constants ─────────────────────────────────────────────────────────────────
 IMG_SIZE      = 224
 BATCH_SIZE    = 128
-N_WORKERS     = 8
+N_WORKERS     = 0
 SEED          = 42
 TEACHER_DIM   = 1536
 LR            = 3e-4
@@ -106,13 +105,13 @@ VARIANTS = {
         aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
         note='binary + distillation + GRL',
     ),
-    'v02_grl_only': dict(
-        alpha_distil=0.0, beta_class=1.0, gamma_adv=1.0,
-        lambda_max=0.2, use_tanh=False, domain_head_size='small',
-        aug_brightness=True, aug_contrast=True,
-        aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
-        note='binary + GRL only — no distillation',
-    ),
+    # 'v02_grl_only': dict(
+    #     alpha_distil=0.0, beta_class=1.0, gamma_adv=1.0,
+    #     lambda_max=0.2, use_tanh=False, domain_head_size='small',
+    #     aug_brightness=True, aug_contrast=True,
+    #     aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
+    #     note='binary + GRL only — no distillation',
+    # ),
     'v03_no_grl': dict(
         alpha_distil=0.0, beta_class=1.0, gamma_adv=0.0,
         lambda_max=0.0, use_tanh=False, domain_head_size='small',
@@ -120,13 +119,13 @@ VARIANTS = {
         aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
         note='binary only — no distillation, no GRL (true ablation baseline)',
     ),
-    'v04_strong_distil': dict(
-        alpha_distil=5.0, beta_class=1.0, gamma_adv=1.0,
-        lambda_max=0.2, use_tanh=False, domain_head_size='small',
-        aug_brightness=True, aug_contrast=True,
-        aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
-        note='strong distillation pull toward Perch geometry',
-    ),
+    # 'v04_strong_distil': dict(
+    #     alpha_distil=5.0, beta_class=1.0, gamma_adv=1.0,
+    #     lambda_max=0.2, use_tanh=False, domain_head_size='small',
+    #     aug_brightness=True, aug_contrast=True,
+    #     aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
+    #     note='strong distillation pull toward Perch geometry',
+    # ),
 }
 
 
@@ -176,7 +175,7 @@ class Cutout:
 
 def build_train_transform(use_brightness, use_contrast,
                            use_time_mask, use_freq_mask, use_cutout):
-    pil_ops = [transforms.Resize((IMG_SIZE, IMG_SIZE))]
+    pil_ops = []
     if use_brightness or use_contrast:
         pil_ops.append(transforms.ColorJitter(
             brightness=0.2 if use_brightness else 0,
@@ -193,7 +192,6 @@ def build_train_transform(use_brightness, use_contrast,
 
 
 val_tf = transforms.Compose([
-    transforms.Resize((IMG_SIZE, IMG_SIZE)),
     transforms.ToTensor(),
     transforms.Normalize(IMAGENET_MEAN, IMAGENET_STD),
 ])
@@ -241,7 +239,8 @@ class SpectrogramDataset(Dataset):
             n = len(self.meta)
             for idx in range(n):
                 path = self.meta.iloc[idx]['png_path']
-                self.cache[idx] = Image.open(path).convert('RGB')
+                img = Image.open(path).convert('RGB')
+                self.cache[idx] = img.resize((IMG_SIZE, IMG_SIZE), Image.BILINEAR)
                 if idx > 0 and idx % 10000 == 0:
                     print(f"    {idx}/{n} ({time.time()-t0:.0f}s)", flush=True)
             print(f"  Caching done in {time.time()-t0:.1f}s", flush=True)
@@ -421,16 +420,12 @@ def run_fold(held_out_ds: str, variant_name: str, cfg: dict,
     test_ds  = SpectrogramDataset(meta_test, teacher_emb, val_tf)
     print(f"  [timing] all datasets cached in {time.time()-t_cache:.1f}s total")
 
-    # persistent_workers=True avoids respawning workers every epoch
     train_dl = DataLoader(train_ds, batch_size=BATCH_SIZE, shuffle=True,
-                          num_workers=N_WORKERS, pin_memory=True,
-                          persistent_workers=True)
+                      num_workers=N_WORKERS, pin_memory=True)
     val_dl   = DataLoader(val_ds,   batch_size=BATCH_SIZE, shuffle=False,
-                          num_workers=N_WORKERS, pin_memory=True,
-                          persistent_workers=True)
+                        num_workers=N_WORKERS, pin_memory=True)
     test_dl  = DataLoader(test_ds,  batch_size=BATCH_SIZE, shuffle=False,
-                          num_workers=N_WORKERS, pin_memory=True,
-                          persistent_workers=True)
+                        num_workers=N_WORKERS, pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
     print(f"  [device] using: {device}")
@@ -561,7 +556,7 @@ def run_fold(held_out_ds: str, variant_name: str, cfg: dict,
         print(f"  [{fold_tag}] ep {epoch+1:03d}/{N_EPOCHS} [P{phase}] ({epoch_time:.1f}s)  λ={lam:.3f}"
               f"\n    train  loss={np.mean(tr_losses):.4f}  distil={np.mean(dl_losses):.4f}"
               f"  domain={np.mean(do_losses):.4f}  auc={tr_auc:.4f}"
-              f"\n    val    loss={np.mean(val_losses):.4f}  auc={val_auc:.4f}  f1={val_f1:.4f}")
+              f"\n    val    loss={np.mean(val_losses):.4f}  auc={val_auc:.4f}  f1={val_f1:.4f}", flush=True)
 
         if val_auc > best_auc + 1e-4:
             best_auc, best_f1, best_epoch, wait = val_auc, val_f1, epoch + 1, 0

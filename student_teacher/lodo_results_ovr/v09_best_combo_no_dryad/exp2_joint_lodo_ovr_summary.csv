@@ -1,0 +1,2 @@
+held_out,n_test,avg_binary_val_f1,test_macro_f1 (test-only),test_macro_f1 (full vocab),test_accuracy,test_balanced_acc,sp_n_rows,sp_n_classes,sp_macro_f1,sp_frac_routed_to_bg
+DRYAD,219,0.7754457308761808,0.6727272727272727,0.06727272727272728,0.5068493150684932,0.5068493150684932,219,1,0.6727272727272727,0.273972602739726

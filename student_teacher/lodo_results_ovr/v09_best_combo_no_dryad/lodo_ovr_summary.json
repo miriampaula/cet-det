@@ -1,0 +1,57 @@
+{
+  "run": "v09_best_combo_no_dryad",
+  "threshold": 0.5,
+  "exp1": {
+    "val_macro_f1": 0.9721832545739554,
+    "binary_val_f1s": {
+      "Balaenoptera_physalus": 1.0,
+      "Delphinids": 0.9375,
+      "Delphinus_delphis": 0.9799426934097422,
+      "Globicephala_melas": 0.9868421052631579,
+      "Grampus_griseus": 0.9014084507042254,
+      "Orcinus_orca": 0.974477958236659,
+      "Physeter_macrocephalus": 0.9897209985315712,
+      "Stenella_coeruleoalba": 1.0,
+      "Tursiops_truncatus": 0.979757085020243
+    },
+    "test_macro_f1": 0.9037598823928261,
+    "test_macro_f1_full_vocab": 0.9037598823928261,
+    "test_weighted_f1": 0.9123424140777976,
+    "test_accuracy": 0.9128294236895453,
+    "test_balanced_acc": 0.8892172494458626,
+    "elapsed_s": 14.817677736282349,
+    "threshold": 0.5
+  },
+  "exp2_avg_test_macro_f1": 0.6727272727272727,
+  "exp3_avg_test_macro_f1": 0.0,
+  "exp2_per_fold": {
+    "DRYAD": {
+      "val_macro_f1": 0.7754457308761808,
+      "binary_val_f1s": {
+        "Balaenoptera_physalus": 1.0,
+        "Delphinids": 0.6474820143884892,
+        "Delphinus_delphis": 0.9813333333333333,
+        "Globicephala_melas": 0.8958333333333334,
+        "Grampus_griseus": 0.75,
+        "Orcinus_orca": 0.9072164948453608,
+        "Physeter_macrocephalus": 0.4423076923076923,
+        "Stenella_coeruleoalba": 0.5806451612903226,
+        "Tursiops_truncatus": 0.7741935483870968
+      },
+      "test_macro_f1": 0.6727272727272727,
+      "test_macro_f1_full_vocab": 0.06727272727272728,
+      "test_weighted_f1": 0.6727272727272726,
+      "test_accuracy": 0.5068493150684932,
+      "test_balanced_acc": 0.5068493150684932,
+      "elapsed_s": 17.467262029647827,
+      "threshold": 0.5,
+      "sp_n_test_rows": 219,
+      "sp_n_classes_present": 1,
+      "sp_macro_f1": 0.6727272727272727,
+      "sp_balanced_acc": 0.5068493150684932,
+      "sp_frac_routed_to_bg": 0.273972602739726,
+      "held_out": "DRYAD"
+    }
+  },
+  "exp3_per_fold": {}
+}
