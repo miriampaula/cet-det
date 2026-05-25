@@ -33,7 +33,12 @@ import torch.nn as nn
 from torch.utils.data import Dataset, DataLoader
 from torchvision import transforms
 from PIL import Image
-import timm
+
+import timm as _timm
+_ = _timm.create_model('efficientnet_b0', pretrained=True)
+del _
+print("[startup] EfficientNet-B0 weights cached.", flush=True)
+
 from sklearn.metrics import (
     f1_score, roc_auc_score, average_precision_score,
     precision_recall_curve, roc_curve,
