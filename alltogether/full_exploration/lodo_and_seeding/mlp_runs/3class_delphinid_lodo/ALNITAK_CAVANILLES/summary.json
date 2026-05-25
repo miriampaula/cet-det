@@ -1,0 +1,234 @@
+{
+  "held_out": "ALNITAK_CAVANILLES",
+  "classes": [
+    "background",
+    "other_mammals",
+    "delphinids"
+  ],
+  "n_train": 216635,
+  "n_val": 25793,
+  "n_test": 5202,
+  "val_macro_f1": 0.9035279968269609,
+  "test_macro_f1_present": 0.3580084533276022,
+  "test_macro_f1_full_vocab": 0.3580084533276022,
+  "test_weighted_f1": 0.7698620271444144,
+  "test_accuracy": 0.8156478277585544,
+  "test_balanced_acc": 0.3581730516833537,
+  "per_class": [
+    {
+      "class": "background",
+      "support": 4348,
+      "precision": 0.8418717224687374,
+      "recall": 0.9599816007359706,
+      "f1": 0.8970556630131098
+    },
+    {
+      "class": "other_mammals",
+      "support": 179,
+      "precision": 0.15789473684210525,
+      "recall": 0.01675977653631285,
+      "f1": 0.030303030303030304
+    },
+    {
+      "class": "delphinids",
+      "support": 675,
+      "precision": 0.29333333333333333,
+      "recall": 0.09777777777777778,
+      "f1": 0.14666666666666667
+    }
+  ],
+  "per_class_ovr_auc": {
+    "background": 0.5176819566561599,
+    "other_mammals": 0.33422012930463996,
+    "delphinids": 0.5321146372792054
+  },
+  "delphinid_precision": 0.29333333333333333,
+  "delphinid_recall": 0.09777777777777778,
+  "delphinid_f1": 0.14666666666666667,
+  "n_delphinid_test": 675,
+  "confusion_matrix": [
+    [
+      4174,
+      16,
+      158
+    ],
+    [
+      175,
+      3,
+      1
+    ],
+    [
+      609,
+      0,
+      66
+    ]
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.20750715825956495,
+      "val_macro_f1": 0.8156101721766887
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.16310521611334625,
+      "val_macro_f1": 0.8302437949541809
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.14717394631041913,
+      "val_macro_f1": 0.8594510296571088
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.1442502168103429,
+      "val_macro_f1": 0.8631641183994821
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.13736047709698324,
+      "val_macro_f1": 0.7498776480285471
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.13199189282854173,
+      "val_macro_f1": 0.7752529468360106
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.1257144363258658,
+      "val_macro_f1": 0.7684346889261832
+    },
+    {
+      "epoch": 8,
+      "train_loss": 0.11788959979806696,
+      "val_macro_f1": 0.8635989255355665
+    },
+    {
+      "epoch": 9,
+      "train_loss": 0.12015795583312487,
+      "val_macro_f1": 0.8655258938152204
+    },
+    {
+      "epoch": 10,
+      "train_loss": 0.13286034902781066,
+      "val_macro_f1": 0.808948346375963
+    },
+    {
+      "epoch": 11,
+      "train_loss": 0.1409327572118549,
+      "val_macro_f1": 0.8424926148383882
+    },
+    {
+      "epoch": 12,
+      "train_loss": 0.13602116580315773,
+      "val_macro_f1": 0.869634980879512
+    },
+    {
+      "epoch": 13,
+      "train_loss": 0.10995972938028262,
+      "val_macro_f1": 0.8581688023759374
+    },
+    {
+      "epoch": 14,
+      "train_loss": 0.10787555749237732,
+      "val_macro_f1": 0.8780554289922239
+    },
+    {
+      "epoch": 15,
+      "train_loss": 0.09957688545509112,
+      "val_macro_f1": 0.8547813528247147
+    },
+    {
+      "epoch": 16,
+      "train_loss": 0.09922821473224588,
+      "val_macro_f1": 0.89235063321516
+    },
+    {
+      "epoch": 17,
+      "train_loss": 0.09412576507227645,
+      "val_macro_f1": 0.8900452831003577
+    },
+    {
+      "epoch": 18,
+      "train_loss": 0.09391490612339395,
+      "val_macro_f1": 0.8775952026387204
+    },
+    {
+      "epoch": 19,
+      "train_loss": 0.09036045841411663,
+      "val_macro_f1": 0.8827683188691865
+    },
+    {
+      "epoch": 20,
+      "train_loss": 0.09125924828644646,
+      "val_macro_f1": 0.8845339571375206
+    },
+    {
+      "epoch": 21,
+      "train_loss": 0.0973252996498302,
+      "val_macro_f1": 0.8654503284911569
+    },
+    {
+      "epoch": 22,
+      "train_loss": 0.09127878201821703,
+      "val_macro_f1": 0.8931813070007294
+    },
+    {
+      "epoch": 23,
+      "train_loss": 0.08859945975186782,
+      "val_macro_f1": 0.8323375717720172
+    },
+    {
+      "epoch": 24,
+      "train_loss": 0.08781296308325952,
+      "val_macro_f1": 0.9035279968269609
+    },
+    {
+      "epoch": 25,
+      "train_loss": 0.10228689099743753,
+      "val_macro_f1": 0.847467603204826
+    },
+    {
+      "epoch": 26,
+      "train_loss": 0.10707634451303222,
+      "val_macro_f1": 0.8604355649656927
+    },
+    {
+      "epoch": 27,
+      "train_loss": 0.1081934636497059,
+      "val_macro_f1": 0.863230736568512
+    },
+    {
+      "epoch": 28,
+      "train_loss": 0.08775134387954409,
+      "val_macro_f1": 0.7827109715652171
+    },
+    {
+      "epoch": 29,
+      "train_loss": 0.08784667277881858,
+      "val_macro_f1": 0.8713788087114289
+    },
+    {
+      "epoch": 30,
+      "train_loss": 0.07794886471541015,
+      "val_macro_f1": 0.8915730723938807
+    }
+  ],
+  "elapsed_s": 97.38171529769897,
+  "training_pool_class_counts": {
+    "background": 209258,
+    "other_mammals": 1466,
+    "delphinids": 31704
+  },
+  "test_class_counts": {
+    "background": 4348,
+    "other_mammals": 179,
+    "delphinids": 675
+  },
+  "test_classes_present_idx": [
+    0,
+    1,
+    2
+  ]
+}

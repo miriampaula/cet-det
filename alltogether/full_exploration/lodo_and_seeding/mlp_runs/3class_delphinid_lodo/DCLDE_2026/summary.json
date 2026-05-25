@@ -1,0 +1,117 @@
+{
+  "held_out": "DCLDE_2026",
+  "classes": [
+    "background",
+    "other_mammals",
+    "delphinids"
+  ],
+  "n_train": 63694,
+  "n_val": 9398,
+  "n_test": 174538,
+  "val_macro_f1": 0.5619214372585838,
+  "test_macro_f1_present": 0.5809583284271991,
+  "test_macro_f1_full_vocab": 0.3873055522847994,
+  "test_weighted_f1": 0.7559642210864318,
+  "test_accuracy": 0.7040816326530612,
+  "test_balanced_acc": 0.6373479745857629,
+  "per_class": [
+    {
+      "class": "background",
+      "support": 152842,
+      "precision": 0.9256713928273561,
+      "recall": 0.7261616571361275,
+      "f1": 0.8138680511252392
+    },
+    {
+      "class": "other_mammals",
+      "support": 0,
+      "precision": 0.0,
+      "recall": 0.0,
+      "f1": 0.0
+    },
+    {
+      "class": "delphinids",
+      "support": 21696,
+      "precision": 0.25488852241331306,
+      "recall": 0.5485342920353983,
+      "f1": 0.3480486057291591
+    }
+  ],
+  "per_class_ovr_auc": {
+    "background": 0.7171680468841404,
+    "delphinids": 0.7149526174500813
+  },
+  "delphinid_precision": 0.25488852241331306,
+  "delphinid_recall": 0.5485342920353983,
+  "delphinid_f1": 0.3480486057291591,
+  "n_delphinid_test": 21696,
+  "confusion_matrix": [
+    [
+      110988,
+      7064,
+      34790
+    ],
+    [
+      0,
+      0,
+      0
+    ],
+    [
+      8912,
+      883,
+      11901
+    ]
+  ],
+  "history": [
+    {
+      "epoch": 1,
+      "train_loss": 0.21432808104926018,
+      "val_macro_f1": 0.5619214372585838
+    },
+    {
+      "epoch": 2,
+      "train_loss": 0.12234144069818918,
+      "val_macro_f1": 0.521404957508712
+    },
+    {
+      "epoch": 3,
+      "train_loss": 0.1083823251811553,
+      "val_macro_f1": 0.5085846471695482
+    },
+    {
+      "epoch": 4,
+      "train_loss": 0.09389102351711538,
+      "val_macro_f1": 0.5227165820187445
+    },
+    {
+      "epoch": 5,
+      "train_loss": 0.08960365580714966,
+      "val_macro_f1": 0.5206458129879218
+    },
+    {
+      "epoch": 6,
+      "train_loss": 0.07974277463052533,
+      "val_macro_f1": 0.4640023980277314
+    },
+    {
+      "epoch": 7,
+      "train_loss": 0.07241141911729762,
+      "val_macro_f1": 0.4537597279462631
+    }
+  ],
+  "elapsed_s": 9.645762920379639,
+  "training_pool_class_counts": {
+    "background": 60764,
+    "other_mammals": 1645,
+    "delphinids": 10683
+  },
+  "test_class_counts": {
+    "background": 152842,
+    "other_mammals": 0,
+    "delphinids": 21696
+  },
+  "test_classes_present_idx": [
+    0,
+    2
+  ]
+}

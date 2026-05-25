@@ -1,0 +1,8 @@
+              precision    recall  f1-score   support
+
+  background     0.4177    0.9706    0.5841       238
+  delphinids     0.9888    0.6582    0.7903       942
+
+    accuracy                         0.7212      1180
+   macro avg     0.7033    0.8144    0.6872      1180
+weighted avg     0.8736    0.7212    0.7487      1180
