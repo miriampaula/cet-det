@@ -1,0 +1,16 @@
+{
+  "alpha_distil": 0.0,
+  "beta_class": 1.0,
+  "gamma_adv": 0.0,
+  "lambda_max": 0.0,
+  "use_tanh": false,
+  "domain_head_size": "small",
+  "aug_brightness": true,
+  "aug_contrast": true,
+  "aug_time_mask": true,
+  "aug_freq_mask": true,
+  "aug_cutout": true,
+  "note": "binary only \u2014 no distillation, no GRL (true ablation baseline)",
+  "variant": "v03_no_grl",
+  "held_out_ds": "ALNITAK_CAVANILLES"
+}
