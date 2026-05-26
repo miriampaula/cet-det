@@ -1,0 +1,15 @@
+[
+  {
+    "n_test": 4406,
+    "n_pos": 58,
+    "pct_pos": 1.3163867453472538,
+    "test_auc": 0.7106636424198205,
+    "test_ap": 0.025915403116651015,
+    "test_f1": 0.5147421056016463,
+    "precision": 0.038461538461538464,
+    "recall": 0.15517241379310345,
+    "threshold": 0.49999999999999994,
+    "held_out": "ALNITAK_CAVANILLES",
+    "variant": "perch_baseline__ALNITAK_CAVANILLES"
+  }
+]

@@ -1,0 +1,15 @@
+[
+  {
+    "n_test": 4406,
+    "n_pos": 58,
+    "pct_pos": 1.3163867453472538,
+    "test_auc": 0.397931668940139,
+    "test_ap": 0.010842110841394411,
+    "test_f1": 0.4806996877449172,
+    "precision": 0.0031746031746031746,
+    "recall": 0.017241379310344827,
+    "threshold": 0.95,
+    "held_out": "ALNITAK_CAVANILLES",
+    "variant": "v03_no_grl__ALNITAK_CAVANILLES"
+  }
+]

@@ -121,13 +121,13 @@ IMAGENET_STD  = torch.tensor([0.229, 0.224, 0.225]).view(3, 1, 1)
 # Variants
 # ══════════════════════════════════════════════════════════════════════════════
 VARIANTS = {
-    'v01_grl_distil': dict(
-        alpha_distil=2.0, beta_class=1.0, gamma_adv=1.0,
-        lambda_max=0.2, use_tanh=False, domain_head_size='small',
-        aug_brightness=True, aug_contrast=True,
-        aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
-        note='binary + distillation + GRL',
-    ),
+    # 'v01_grl_distil': dict(
+    #     alpha_distil=2.0, beta_class=1.0, gamma_adv=1.0,
+    #     lambda_max=0.2, use_tanh=False, domain_head_size='small',
+    #     aug_brightness=True, aug_contrast=True,
+    #     aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
+    #     note='binary + distillation + GRL',
+    # ),
     # 'v02_grl_only': dict(
     #     alpha_distil=0.0, beta_class=1.0, gamma_adv=1.0,
     #     lambda_max=0.2, use_tanh=False, domain_head_size='small',
@@ -135,13 +135,13 @@ VARIANTS = {
     #     aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
     #     note='binary + GRL only — no distillation',
     # ),
-    # 'v03_no_grl': dict(
-    #     alpha_distil=0.0, beta_class=1.0, gamma_adv=0.0,
-    #     lambda_max=0.0, use_tanh=False, domain_head_size='small',
-    #     aug_brightness=True, aug_contrast=True,
-    #     aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
-    #     note='binary only — no distillation, no GRL (true ablation baseline)',
-    # ),
+    'v03_no_grl': dict(
+        alpha_distil=0.0, beta_class=1.0, gamma_adv=0.0,
+        lambda_max=0.0, use_tanh=False, domain_head_size='small',
+        aug_brightness=True, aug_contrast=True,
+        aug_time_mask=True, aug_freq_mask=True, aug_cutout=True,
+        note='binary only — no distillation, no GRL (true ablation baseline)',
+    ),
     # 'v04_strong_distil': dict(
     #     alpha_distil=5.0, beta_class=1.0, gamma_adv=1.0,
     #     lambda_max=0.2, use_tanh=False, domain_head_size='small',

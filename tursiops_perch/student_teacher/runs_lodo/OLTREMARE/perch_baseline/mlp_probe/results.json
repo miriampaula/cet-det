@@ -1,0 +1,15 @@
+[
+  {
+    "n_test": 16860,
+    "n_pos": 2904,
+    "pct_pos": 17.22419928825623,
+    "test_auc": 0.8483743575834954,
+    "test_ap": 0.7547989477237844,
+    "test_f1": 0.8346874651810585,
+    "precision": 0.8568702290076335,
+    "recall": 0.6184573002754821,
+    "threshold": 0.95,
+    "held_out": "OLTREMARE",
+    "variant": "perch_baseline__OLTREMARE"
+  }
+]

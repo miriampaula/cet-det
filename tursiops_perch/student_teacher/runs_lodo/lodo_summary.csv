@@ -1,0 +1,2 @@
+held_out_ds,variant,note,alpha_distil,gamma_adv,lambda_max,best_val_auc,best_val_f1,test_auc,test_ap,test_f1,best_threshold,training_prevalence,best_epoch,training_min,avg_epoch_s,skipped
+Adriatic_Sea,v01_grl_distil,binary + distillation + GRL,2.0,1.0,0.2,0.9871058721664658,0.8513225904530253,0.8181501900123106,0.9492967949285522,0.8771750255885363,0.075,0.08007588774341351,3,165.3612358570099,180.38946617733347,False
