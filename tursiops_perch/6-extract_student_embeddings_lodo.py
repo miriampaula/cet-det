@@ -19,13 +19,13 @@ Usage:
     cd /data2/mromaniuc/cet-det/tursiops_perch
 
     # All checkpoints, PCA + UMAP:
-    python extract_student_embeddings_lodo.py --viz
+    python 6-extract_student_embeddings_lodo.py --viz
 
     # PCA + UMAP + t-SNE:
-    python extract_student_embeddings_lodo.py --viz --tsne
+    python 6-extract_student_embeddings_lodo.py --viz --tsne
 
     # Specific folds only:
-    python extract_student_embeddings_lodo.py --viz \
+    python 6-extract_student_embeddings_lodo.py --viz \
         --holdout ALNITAK_CAVANILLES DRYAD OLTREMARE \
         --variant v03_no_grl
 """

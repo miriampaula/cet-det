@@ -19,19 +19,18 @@ Usage:
 
 
 PYTHONUNBUFFERED=1 python -u 7-mlp_probe_student_lodo.py \
-    --holdout ALNITAK_CAVANILLES DRYAD OLTREMARE \
-    --variant v03_no_grl --also-perch \
-    > logs/mlp_probe.log 2>&1 &
-echo $! > logs/mlp_probe.pid
+    --holdout Adriatic_Sea ALNITAK_CAVANILLES DRYAD OLTREMARE \
+    --also-perch \
+    > logs/mlp_probe_all.log 2>&1 &
 
 
     # Only the v03_no_grl checkpoints for specific folds:
-    python mlp_probe_student_lodo.py \
+    python 7-mlp_probe_student_lodo.py \
         --holdout ALNITAK_CAVANILLES DRYAD OLTREMARE \
         --variant v03_no_grl
 
     # Add Perch baseline for comparison:
-    python mlp_probe_student_lodo.py \
+    python 7-mlp_probe_student_lodo.py \
         --holdout ALNITAK_CAVANILLES DRYAD OLTREMARE \
         --variant v03_no_grl --also-perch
 

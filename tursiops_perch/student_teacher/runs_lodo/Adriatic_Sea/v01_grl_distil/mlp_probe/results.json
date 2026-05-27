@@ -1,0 +1,15 @@
+[
+  {
+    "n_test": 1180,
+    "n_pos": 942,
+    "pct_pos": 79.83050847457626,
+    "test_auc": 0.8539536833841818,
+    "test_ap": 0.9597026069417482,
+    "test_f1": 0.726129770073432,
+    "precision": 0.9207683073229291,
+    "recall": 0.8142250530785563,
+    "threshold": 0.2,
+    "held_out": "Adriatic_Sea",
+    "variant": "v01_grl_distil__Adriatic_Sea"
+  }
+]
