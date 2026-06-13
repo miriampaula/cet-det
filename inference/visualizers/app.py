@@ -5,8 +5,8 @@ Dash app for interactive cetacean detection prediction review.
 Reads the L4 prediction CSV/parquet produced by notebook 7.
 
 Run:
-    python app.py --predictions /data2/mromaniuc/cet-det/inference_arbas/predictions/arbas_predictions_l4.parquet
-    python app.py --predictions /data2/mromaniuc/cet-det/inference_harrapatu/predictions/harrapatu_predictions_l4.parquet --port 8051
+    python app.py --predictions /data2/mromaniuc/cet-det/inference/inference_arbas/predictions/arbas_predictions_l4.csv
+    python app.py --predictions /data2/mromaniuc/cet-det/inference/inference_harrapatu/predictions/harrapatu_predictions_l4.parquet --port 8051
 
     # VSCode SSH will auto-forward the port. Or manually:
     #   ssh -L 8050:localhost:8050 user@server
