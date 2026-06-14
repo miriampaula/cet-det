@@ -35,6 +35,12 @@ If only the single legacy prob_{sp} exists, the panel shows one bar (current
 behaviour). PR thresholds, if provided as pr_threshold_{sp} columns, are drawn
 as a marker on the relevant bar rather than a separate bar.
 
+NEW FILTERS (pred_consensus vs expert):
+  * true_positive  — consensus=cetacean AND expert=cetacean
+  * false_positive — consensus=cetacean AND expert=background/no_label
+  * false_negative — consensus=background AND expert=cetacean
+  * true_negative  — consensus=background AND expert=background/no_label
+
 Run:
     python cetacean_inspector_app.py \
         --csv  arbas_comparison_5s_v3.csv \
@@ -69,6 +75,12 @@ INK_DIM   = '#9fb4cf'   # secondary text
 INK_FAINT = '#5e779a'   # tertiary / captions
 VIOLET    = '#9a8cff'   # third prob set (pr) — cool accent, distinct from green/yellow
 
+# Confusion-matrix badge colours
+TP_COL = '#3da57f'   # green  — true positive
+FP_COL = '#ffd95c'   # yellow — false positive
+FN_COL = '#ff8c5a'   # orange — false negative
+TN_COL = '#5e779a'   # muted  — true negative
+
 PAGE_SIZE = 3           # three spectrograms at a time
 # Native PNG is 500x128 (≈3.9:1). Keep that ratio; size to fit 3-up on desktop.
 SPECTRO_W = 460
@@ -95,8 +107,6 @@ STRATEGIES = [('pred_argmax', 'argmax'), ('pred_vec', 'vec'),
               ('pred_pr', 'pr'), ('pred_consensus', 'consensus')]
 
 # Probability sets the detail panel can render, in display order.
-# (prefix, human label, bar gradient start, bar gradient end). The first entry's
-# columns (prob_{sp}) are always present; the others are shown only if found.
 PROB_SETS = [
     ('prob_',     'raw / argmax', GREEN,  GREEN_LT),
     ('prob_vec_', 'vector',       CHART,  YELLOW),
@@ -108,11 +118,16 @@ def chip_color(label) -> str:
     s = str(label)
     if s in SPECIES_COLOR:
         return SPECIES_COLOR[s]
-    return NEUTRAL.get(s, '#4a7560')  # unknown species -> muted green
+    return NEUTRAL.get(s, '#4a7560')
 
 
 def is_neutral(label) -> bool:
     return str(label) in ('background', 'uncertain', 'no_label', 'nan', '', '—')
+
+
+def consensus_is_cetacean(val) -> bool:
+    """True if pred_consensus is a real species (not background/uncertain/—)."""
+    return str(val) not in ('background', 'uncertain', 'no_label', 'nan', '', '—')
 
 
 # ── spectrogram path reconstruction ──────────────────────────────────────────
@@ -125,7 +140,6 @@ def wav_to_date(wav_name: str) -> str:
 
 
 def wav_to_clock(wav_name: str) -> str:
-    """Wall-clock HH:MM:SS embedded after the date in '6338.240528160459'."""
     m = re.search(r'\.\d{6}(\d{2})(\d{2})(\d{2})', wav_name)
     if m:
         hh, mm, ss = m.groups()
@@ -163,12 +177,27 @@ def load_comparison(csv_path: str) -> pd.DataFrame:
 
 
 def detect_prob_sets(df: pd.DataFrame):
-    """Return the subset of PROB_SETS actually present in the CSV."""
     present = []
     for prefix, label, c0, c1 in PROB_SETS:
         if any(f'{prefix}{sp}' in df.columns for sp in SHARED_SPECIES):
             present.append((prefix, label, c0, c1))
     return present
+
+
+# ── confusion helpers ─────────────────────────────────────────────────────────
+def confusion_label(row) -> str:
+    """Return 'TP', 'FP', 'FN', 'TN', or '' if expert not annotated."""
+    if not bool(row.get('expert_annotated', False)):
+        return ''
+    model_pos = consensus_is_cetacean(row.get('pred_consensus', ''))
+    expert_pos = bool(row.get('exp_cetacean_detected', False))
+    if model_pos and expert_pos:
+        return 'TP'
+    if model_pos and not expert_pos:
+        return 'FP'
+    if not model_pos and expert_pos:
+        return 'FN'
+    return 'TN'
 
 
 # ── filtering ────────────────────────────────────────────────────────────────
@@ -188,6 +217,14 @@ def apply_filters(df: pd.DataFrame, mode: str, species) -> pd.DataFrame:
     elif mode == 'has_png':
         if '_has_png' in out.columns:
             out = out[out['_has_png']]
+    elif mode in ('true_positive', 'false_positive', 'false_negative', 'true_negative'):
+        # only consider rows that have a rendered spectrogram
+        if '_has_png' in out.columns:
+            out = out[out['_has_png']]
+        target = {'true_positive': 'TP', 'false_positive': 'FP',
+                  'false_negative': 'FN', 'true_negative': 'TN'}[mode]
+        mask = out.apply(lambda r: confusion_label(r) == target, axis=1)
+        out = out[mask]
     if species and species != 'ALL':
         in_any = (
             df.get('pred_pr', pd.Series('', index=df.index)).eq(species) |
@@ -197,6 +234,151 @@ def apply_filters(df: pd.DataFrame, mode: str, species) -> pd.DataFrame:
         )
         out = out[in_any.reindex(out.index, fill_value=False)]
     return out.reset_index(drop=True)
+
+
+# ── species stats panel ───────────────────────────────────────────────────────
+def species_stats_panel(sub: pd.DataFrame) -> html.Div:
+    """Always-visible panel above the overview. Shows per-species segment counts
+    for (a) expert labels and (b) pred_consensus, in the currently filtered data.
+    Also shows TP/FP/FN/TN totals for annotated segments."""
+    n = len(sub)
+    if n == 0:
+        return html.Div()
+
+    # ── per-species counts ────────────────────────────────────────────────────
+    expert_counts   = {}
+    consensus_counts = {}
+    for sp in SHARED_SPECIES:
+        expert_counts[sp]    = int((sub.get('exp_top_species', pd.Series()) == sp).sum())
+        consensus_counts[sp] = int((sub.get('pred_consensus', pd.Series()) == sp).sum())
+
+    max_exp  = max(expert_counts.values()) or 1
+    max_cons = max(consensus_counts.values()) or 1
+
+    def bar_row(sp):
+        ec = expert_counts[sp]
+        cc = consensus_counts[sp]
+        col = SPECIES_COLOR.get(sp, GREEN)
+        bar_w_exp  = f"{ec  / max_exp  * 100:.1f}%"
+        bar_w_cons = f"{cc / max_cons * 100:.1f}%"
+        return html.Div([
+            # species label
+            html.Div(sp, style={
+                'width': '46px', 'color': col, 'fontWeight': '700',
+                'fontSize': '12px', 'flexShrink': '0',
+                'fontFamily': 'ui-monospace, monospace'}),
+            # expert bar + count
+            html.Div([
+                html.Div(style={
+                    'width': bar_w_exp, 'height': '8px', 'borderRadius': '3px',
+                    'background': YELLOW, 'minWidth': '2px' if ec > 0 else '0'}),
+            ], style={'flex': '1 1 0', 'display': 'flex', 'alignItems': 'center',
+                      'background': f'{YELLOW}18', 'borderRadius': '3px',
+                      'padding': '2px 4px', 'marginRight': '6px'}),
+            html.Div(str(ec), style={
+                'width': '36px', 'textAlign': 'right', 'color': YELLOW,
+                'fontSize': '11px', 'fontFamily': 'ui-monospace, monospace',
+                'flexShrink': '0', 'marginRight': '16px'}),
+            # consensus bar + count
+            html.Div([
+                html.Div(style={
+                    'width': bar_w_cons, 'height': '8px', 'borderRadius': '3px',
+                    'background': GREEN, 'minWidth': '2px' if cc > 0 else '0'}),
+            ], style={'flex': '1 1 0', 'display': 'flex', 'alignItems': 'center',
+                      'background': f'{GREEN}18', 'borderRadius': '3px',
+                      'padding': '2px 4px', 'marginRight': '6px'}),
+            html.Div(str(cc), style={
+                'width': '36px', 'textAlign': 'right', 'color': GREEN,
+                'fontSize': '11px', 'fontFamily': 'ui-monospace, monospace',
+                'flexShrink': '0'}),
+        ], style={'display': 'flex', 'alignItems': 'center', 'gap': '0',
+                  'marginBottom': '5px'})
+
+    legend = html.Div([
+        html.Div(style={'width': '46px', 'flexShrink': '0'}),
+        html.Div([
+            html.Div(style={'width': '10px', 'height': '10px', 'borderRadius': '2px',
+                            'background': YELLOW, 'marginRight': '5px',
+                            'flexShrink': '0'}),
+            html.Span('expert', style={'color': YELLOW, 'fontSize': '11px',
+                                       'fontFamily': 'ui-monospace, monospace'}),
+        ], style={'flex': '1 1 0', 'display': 'flex', 'alignItems': 'center',
+                  'marginRight': '42px'}),
+        html.Div([
+            html.Div(style={'width': '10px', 'height': '10px', 'borderRadius': '2px',
+                            'background': GREEN, 'marginRight': '5px',
+                            'flexShrink': '0'}),
+            html.Span('consensus', style={'color': GREEN, 'fontSize': '11px',
+                                          'fontFamily': 'ui-monospace, monospace'}),
+        ], style={'flex': '1 1 0', 'display': 'flex', 'alignItems': 'center'}),
+    ], style={'display': 'flex', 'alignItems': 'center', 'marginBottom': '8px'})
+
+    # ── confusion matrix totals (PNG-rendered AND expert-annotated rows only) ─
+    ann = sub[sub['_has_png']].copy() if '_has_png' in sub.columns else sub.copy()
+    if 'expert_annotated' in ann.columns:
+        ann = ann[ann['expert_annotated'].astype(bool)]
+    else:
+        ann = pd.DataFrame()
+    if len(ann) > 0:
+        tp = int(ann.apply(lambda r: confusion_label(r) == 'TP', axis=1).sum())
+        fp = int(ann.apply(lambda r: confusion_label(r) == 'FP', axis=1).sum())
+        fn = int(ann.apply(lambda r: confusion_label(r) == 'FN', axis=1).sum())
+        tn = int(ann.apply(lambda r: confusion_label(r) == 'TN', axis=1).sum())
+        total_ann = tp + fp + fn + tn
+
+        def cm_badge(label, count, col):
+            pct = f" ({count/total_ann*100:.0f}%)" if total_ann > 0 else ""
+            return html.Div([
+                html.Div(label, style={
+                    'fontSize': '10px', 'fontWeight': '700',
+                    'fontFamily': 'ui-monospace, monospace',
+                    'color': col, 'letterSpacing': '0.06em'}),
+                html.Div(f"{count:,}{pct}", style={
+                    'fontSize': '18px', 'fontWeight': '800',
+                    'fontFamily': 'ui-monospace, monospace', 'color': col,
+                    'lineHeight': '1.1'}),
+            ], style={
+                'background': f'{col}1a', 'border': f'1px solid {col}55',
+                'borderRadius': '10px', 'padding': '10px 18px',
+                'textAlign': 'center', 'minWidth': '80px'})
+
+        cm_row = html.Div([
+            cm_badge('TP', tp, TP_COL),
+            cm_badge('FP', fp, FP_COL),
+            cm_badge('FN', fn, FN_COL),
+            cm_badge('TN', tn, TN_COL),
+            html.Div([
+                html.Div('annotated', style={
+                    'fontSize': '10px', 'color': INK_FAINT,
+                    'fontFamily': 'ui-monospace, monospace', 'letterSpacing': '0.06em'}),
+                html.Div(f"{total_ann:,}", style={
+                    'fontSize': '18px', 'fontWeight': '800',
+                    'fontFamily': 'ui-monospace, monospace', 'color': INK_DIM}),
+            ], style={'padding': '10px 18px', 'textAlign': 'center',
+                      'borderLeft': f'1px solid {LINE}', 'marginLeft': '8px'}),
+        ], style={'display': 'flex', 'gap': '10px', 'alignItems': 'center',
+                  'marginTop': '16px', 'paddingTop': '14px',
+                  'borderTop': f'1px solid {LINE}'})
+    else:
+        cm_row = html.Div()
+
+    header = html.Div([
+        html.Span('DETECTIONS', style={
+            'color': INK_DIM, 'fontSize': '11px', 'letterSpacing': '0.1em',
+            'fontFamily': 'ui-monospace, monospace'}),
+        html.Span(f'  ·  {n:,} segments in current view',
+                  style={'color': INK_FAINT, 'fontSize': '11px',
+                         'fontFamily': 'ui-monospace, monospace'}),
+    ], style={'marginBottom': '12px'})
+
+    return html.Div([
+        header,
+        legend,
+        *[bar_row(sp) for sp in SHARED_SPECIES],
+        cm_row,
+    ], style={'background': PANEL, 'border': f'1px solid {LINE}',
+              'borderRadius': '16px', 'padding': '16px 20px',
+              'marginBottom': '14px'})
 
 
 # ── frequency axis (log-mel) ─────────────────────────────────────────────────
@@ -251,18 +433,9 @@ def chip(label, role='strat'):
 # ── one segment column ───────────────────────────────────────────────────────
 def segment_column(pos: int, row, spectro_url_base: str, glued: bool = False,
                    last: bool = False):
-    """Spectrogram is served by URL (Flask static route) — no base64 inlining,
-    so the browser fetches and caches each PNG itself. Much faster paging.
-
-    When ``glued`` is True the three spectrograms butt together to read as one
-    continuous recording: images touch with no gap, inner corners are squared,
-    and a thin vertical separator marks each segment boundary except the last.
-    The chips/labels beneath stay per-segment as before."""
     has_png = bool(row.get('_has_png', False))
 
     if glued:
-        # square the inner corners so adjacent images form a seamless strip;
-        # round only the outer edges of the window.
         radius = ('6px 0 0 6px' if pos == 0
                   else ('0 6px 6px 0' if last else '0'))
     else:
@@ -274,8 +447,6 @@ def segment_column(pos: int, row, spectro_url_base: str, glued: bool = False,
             'width': '100%', 'height': f'{SPECTRO_H}px', 'objectFit': 'fill',
             'display': 'block', 'borderRadius': radius, 'background': '#040a14'}
         if glued:
-            # outer frame only: top/bottom on every tile, left on first,
-            # right on last — so the strip has one continuous border.
             img_style['borderTop'] = f'1px solid {LINE}'
             img_style['borderBottom'] = f'1px solid {LINE}'
             if pos == 0:
@@ -293,7 +464,6 @@ def segment_column(pos: int, row, spectro_url_base: str, glued: bool = False,
             'color': INK_FAINT, 'fontSize': '11px',
             'fontFamily': 'ui-monospace, monospace', 'textAlign': 'center'})
 
-    # thin separator on the segment boundary (every tile but the last) when glued
     if glued and not last and has_png:
         img_wrap = html.Div([
             img,
@@ -312,11 +482,28 @@ def segment_column(pos: int, row, spectro_url_base: str, glued: bool = False,
     clock = wav_to_clock(str(row['wav_name']))
     sub = f"{offset_to_timerange(row['offset_s'])}" + (f"  ·  {clock}" if clock else '')
 
+    # confusion badge for this segment
+    cm = confusion_label(row)
+    cm_colors = {'TP': TP_COL, 'FP': FP_COL, 'FN': FN_COL, 'TN': TN_COL}
+    cm_badge = html.Div(cm, style={
+        'fontSize': '10px', 'fontWeight': '700', 'letterSpacing': '0.06em',
+        'fontFamily': 'ui-monospace, monospace',
+        'color': cm_colors.get(cm, INK_FAINT),
+        'background': f"{cm_colors.get(cm, LINE)}22",
+        'border': f"1px solid {cm_colors.get(cm, LINE)}55",
+        'borderRadius': '4px', 'padding': '2px 6px',
+        'display': 'inline-block', 'marginLeft': '6px',
+    }) if cm else html.Span()
+
     return html.Div([
         img_wrap,
-        html.Div(sub, style={
-            'fontSize': '11px', 'color': INK_DIM, 'textAlign': 'center',
-            'fontFamily': 'ui-monospace, monospace', 'margin': '8px 0 10px'}),
+        html.Div([
+            html.Span(sub, style={
+                'fontSize': '11px', 'color': INK_DIM,
+                'fontFamily': 'ui-monospace, monospace'}),
+            cm_badge,
+        ], style={'display': 'flex', 'alignItems': 'center',
+                  'justifyContent': 'center', 'margin': '8px 0 10px'}),
         *[chip(row.get(s, '—')) for s, _ in STRATEGIES],
         html.Div(style={'height': '1px', 'background': LINE, 'margin': '8px 2px'}),
         chip(exp_label, role='expert'),
@@ -326,7 +513,6 @@ def segment_column(pos: int, row, spectro_url_base: str, glued: bool = False,
         style={'width': f'{SPECTRO_W}px', 'flex': '0 0 auto',
                'display': 'flex', 'flexDirection': 'column', 'gap': '8px',
                'cursor': 'pointer',
-               # zero horizontal padding when glued so the images touch
                'padding': '6px 0' if glued else '6px',
                'borderRadius': '12px', 'transition': 'background .12s'})
 
@@ -352,14 +538,6 @@ def rail_labels():
 
 
 def overview_bars(sub: pd.DataFrame, page: int):
-    """A clickable strip over the *currently filtered* segments, where each bar
-    is exactly one PAGE (PAGE_SIZE consecutive segments). Bar height = fraction
-    of that page's segments that are a cetacean detection (by consensus). Click
-    a bar to jump the filmstrip to that page. The current page is highlighted.
-
-    Below the bars runs a date ruler: a tick + MM-DD label wherever the calendar
-    date changes from one page to the next, plus a span summary so you can see
-    how many days / hours this view covers."""
     n = len(sub)
     if n == 0:
         return html.Div()
@@ -371,7 +549,6 @@ def overview_bars(sub: pd.DataFrame, page: int):
 
     n_pages = max(1, (n + PAGE_SIZE - 1) // PAGE_SIZE)
 
-    # one timestamp per segment (date + wall clock) for the ruler / summary
     dates = [wav_to_date(str(w)) for w in sub['wav_name']]
     clocks = [wav_to_clock(str(w)) for w in sub['wav_name']]
 
@@ -406,7 +583,6 @@ def overview_bars(sub: pd.DataFrame, page: int):
         'display': 'flex', 'flexDirection': 'row', 'alignItems': 'flex-end',
         'gap': '1px', 'height': '56px', 'width': '100%'})
 
-    # ── date ruler: tick + MM-DD label wherever the date changes ─────────────
     ticks = []
     for p in range(n_pages):
         if p == 0 or page_first_date[p] != page_first_date[p - 1]:
@@ -415,7 +591,7 @@ def overview_bars(sub: pd.DataFrame, page: int):
                 html.Div(style={'width': '1px', 'height': '6px',
                                 'background': INK_FAINT}),
                 html.Div(page_first_date[p][5:] if len(page_first_date[p]) >= 5
-                         else page_first_date[p],  # MM-DD
+                         else page_first_date[p],
                          style={'fontSize': '9px', 'color': INK_DIM,
                                 'fontFamily': 'ui-monospace, monospace',
                                 'whiteSpace': 'nowrap', 'marginTop': '1px'}),
@@ -425,7 +601,6 @@ def overview_bars(sub: pd.DataFrame, page: int):
         'position': 'relative', 'width': '100%', 'height': '24px',
         'marginTop': '3px', 'borderTop': f'1px solid {LINE}'})
 
-    # ── span summary: #pages / #days / time span ─────────────────────────────
     uniq_dates = sorted(set(dates))
     n_days = len(uniq_dates)
     span_date = (uniq_dates[0] if n_days == 1
@@ -442,13 +617,6 @@ def overview_bars(sub: pd.DataFrame, page: int):
 
 
 def detail_panel(rows=None, prob_sets=None):
-    """Per-species table for the segments in the current window (1–3), shown
-    side by side. Each segment contributes one model-prob bar per detected
-    probability set (raw / vector / pr) plus its expert vote bar, grouped under
-    that segment's offset/clock header. PR thresholds, if present as
-    pr_threshold_{sp}, are drawn as a tick on the relevant bar.
-
-    ``rows`` is a list of (position_index, row) pairs for the current page."""
     if not rows:
         return html.Div('No segments in this view.',
                         style={'color': INK_FAINT, 'padding': '24px',
@@ -457,7 +625,6 @@ def detail_panel(rows=None, prob_sets=None):
     prob_sets = prob_sets or [('prob_', dict(STRATEGIES).get(PROB_SOURCE, PROB_SOURCE),
                                GREEN, GREEN_LT)]
 
-    # Bars are fluid: fill % of the cell so they stretch as the panel widens.
     def prob_bar(val, c0, c1, thresh=None):
         v = float(val) if pd.notna(val) else 0.0
         pct = f'{min(1.0, v) * 100:.1f}%'
@@ -479,8 +646,8 @@ def detail_panel(rows=None, prob_sets=None):
                               'fontSize': '11px', 'width': '44px',
                               'whiteSpace': 'nowrap'})
 
-    cols_per_seg = len(prob_sets) + 1            # prob sets + expert
-    span_per_seg = 2 * cols_per_seg              # each = bar + number
+    cols_per_seg = len(prob_sets) + 1
+    span_per_seg = 2 * cols_per_seg
 
     def sticky_name_td(text, color, weight):
         return html.Td(text, style={'padding': '5px 12px 5px 0', 'color': color,
@@ -507,7 +674,6 @@ def detail_panel(rows=None, prob_sets=None):
 
     body = [species_row(sp) for sp in SHARED_SPECIES]
 
-    # background row: model has prob_bg; expert has no vote (always —)
     have_bg = any(any(c in r.index for c in ('prob_bg', 'prob_background'))
                   for _p, r in rows)
     if have_bg:
@@ -534,7 +700,6 @@ def detail_panel(rows=None, prob_sets=None):
                                                'width': '0', 'padding': '0'}))
         body.append(html.Tr(bg_cells))
 
-    # ── two-row header: segment headers, then per-set sub-labels ─────────────
     seg_header_cells = [html.Th('', style={'position': 'sticky', 'left': '0',
                                            'background': PANEL_2, 'zIndex': '1',
                                            'width': '60px'})]
@@ -590,8 +755,6 @@ def make_app(df, spectro_dir, freq_max_khz):
     app = Dash(__name__)
     server = app.server
 
-    # Index PNGs once. Map a *lowercased* filename -> real Path so the static
-    # route can resolve case-insensitively. Lazy: we only read bytes on request.
     png_index = {p.name.lower(): p for p in spectro_dir.glob('*.png')} \
         if spectro_dir.exists() else {}
 
@@ -606,7 +769,6 @@ def make_app(df, spectro_dir, freq_max_khz):
     print("Probability sets detected for detail panel: "
           + ", ".join(lbl for _p, lbl, _a, _b in prob_sets))
 
-    # ── static spectrogram route + tiny resolved-path cache ──────────────────
     SPECTRO_URL = '/spectro'
     _path_cache: dict[str, Path] = {}
 
@@ -620,7 +782,6 @@ def make_app(df, spectro_dir, freq_max_khz):
                 flask.abort(404)
             _path_cache[key] = p
         resp = flask.send_file(p, mimetype='image/png')
-        # let the browser cache aggressively — these PNGs never change
         resp.headers['Cache-Control'] = 'public, max-age=31536000, immutable'
         return resp
 
@@ -629,9 +790,6 @@ def make_app(df, spectro_dir, freq_max_khz):
         '{%favicon%}{%css%}<style>'
         f'body{{margin:0;background:{BG};}}'
         f'::selection{{background:{GREEN}55;}}'
-        # ── LIGHT-themed dropdowns (species / view) so they are legible ──────
-        # react-select v2/v3 (current Dash dcc.Dropdown) uses hashed classes
-        # like css-xxxx-control / -menu / -option, matched here by substring.
         f'div[class*="-control"]{{background-color:#ffffff!important;'
         f'border-color:#c3cdd9!important;color:#10212f!important;'
         f'box-shadow:none!important;border-radius:8px!important;}}'
@@ -650,7 +808,6 @@ def make_app(df, spectro_dir, freq_max_khz):
         f'border:none!important;box-shadow:none!important;}}'
         f'div[class*="-indicatorContainer"] svg{{fill:#5e779a!important;}}'
         f'div[class*="-indicatorSeparator"]{{background-color:#c3cdd9!important;}}'
-        # legacy react-select v1 classes (older Dash fallback)
         f'.Select-control,.Select-menu-outer,.Select-menu,.Select-multi-value-wrapper,'
         f'.is-open>.Select-control,.is-focused:not(.is-open)>.Select-control'
         f'{{background-color:#ffffff!important;border-color:#c3cdd9!important;'
@@ -663,7 +820,6 @@ def make_app(df, spectro_dir, freq_max_khz):
         f'{{background-color:#eef3f8!important;color:#0a1422!important;}}'
         f'.Select-arrow{{border-color:#5e779a transparent transparent!important;}}'
         f'.is-open .Select-arrow{{border-color:transparent transparent #5e779a!important;}}'
-        # numeric jump input keeps the dark style (reads fine against the page)
         f'input[type="number"]{{background:{PANEL}!important;color:{INK}!important;'
         f'border:1px solid {LINE}!important;border-radius:8px!important;'
         f'padding:6px 8px!important;font-family:ui-monospace,monospace!important;}}'
@@ -671,6 +827,18 @@ def make_app(df, spectro_dir, freq_max_khz):
         f'padding:7px 14px;font-family:ui-monospace,monospace;font-size:13px;cursor:pointer;'
         f'transition:background .15s,border-color .15s;}}'
         f'.ci-btn:hover{{background:{GREEN};border-color:{GREEN_LT};color:#06101c;}}'
+        # confusion filter buttons
+        f'.cf-btn{{border-radius:8px;padding:6px 14px;font-family:ui-monospace,monospace;'
+        f'font-size:12px;font-weight:700;letter-spacing:0.04em;cursor:pointer;'
+        f'border:1px solid;transition:background .15s,opacity .15s;}}'
+        f'.cf-btn-tp{{background:{TP_COL}22;color:{TP_COL};border-color:{TP_COL}66;}}'
+        f'.cf-btn-tp:hover,.cf-btn-tp.active{{background:{TP_COL};color:#06101c;border-color:{TP_COL};}}'
+        f'.cf-btn-fp{{background:{FP_COL}22;color:{FP_COL};border-color:{FP_COL}66;}}'
+        f'.cf-btn-fp:hover,.cf-btn-fp.active{{background:{FP_COL};color:#06101c;border-color:{FP_COL};}}'
+        f'.cf-btn-fn{{background:{FN_COL}22;color:{FN_COL};border-color:{FN_COL}66;}}'
+        f'.cf-btn-fn:hover,.cf-btn-fn.active{{background:{FN_COL};color:#06101c;border-color:{FN_COL};}}'
+        f'.cf-btn-tn{{background:{TN_COL}22;color:{TN_COL};border-color:{TN_COL}66;}}'
+        f'.cf-btn-tn:hover,.cf-btn-tn.active{{background:{TN_COL};color:{INK};border-color:{TN_COL};}}'
         f'#filmstrip>div:hover{{background:{PANEL_2};}}'
         f'::-webkit-scrollbar{{height:10px;width:10px;}}'
         f'::-webkit-scrollbar-track{{background:{BG};}}'
@@ -703,6 +871,7 @@ def make_app(df, spectro_dir, freq_max_khz):
             'color': INK_FAINT, 'fontSize': '12px', 'marginBottom': '16px',
             'fontFamily': 'ui-monospace, monospace'}),
 
+        # ── filter row ────────────────────────────────────────────────────────
         html.Div([
             html.Label('view', style=label_css),
             dcc.Dropdown(id='mode', clearable=False, value='has_png',
@@ -713,10 +882,27 @@ def make_app(df, spectro_dir, freq_max_khz):
                              {'label': 'strategies disagree (uncertain)', 'value': 'disagree_strat'},
                              {'label': 'I disagree with expert', 'value': 'disagree_expert'},
                              {'label': 'expert heard a cetacean', 'value': 'expert_positive'},
+                             {'label': 'true positives  (TP)', 'value': 'true_positive'},
+                             {'label': 'false positives (FP)', 'value': 'false_positive'},
+                             {'label': 'false negatives (FN)', 'value': 'false_negative'},
+                             {'label': 'true negatives  (TN)', 'value': 'true_negative'},
                          ]),
             html.Label('species', style={**label_css, 'marginLeft': '14px'}),
             dcc.Dropdown(id='species', clearable=False, value='ALL',
                          options=species_opts, style={'width': '150px'}),
+            # confusion quick-buttons
+            html.Div([
+                html.Span('jump to:', style={**label_css, 'marginLeft': '14px',
+                                             'marginRight': '8px'}),
+                html.Button('TP', id='btn-tp', n_clicks=0,
+                             className='cf-btn cf-btn-tp'),
+                html.Button('FP', id='btn-fp', n_clicks=0,
+                             className='cf-btn cf-btn-fp'),
+                html.Button('FN', id='btn-fn', n_clicks=0,
+                             className='cf-btn cf-btn-fn'),
+                html.Button('TN', id='btn-tn', n_clicks=0,
+                             className='cf-btn cf-btn-tn'),
+            ], style={'display': 'flex', 'alignItems': 'center', 'gap': '6px'}),
             html.Div(style={'flex': '1 1 auto'}),
             html.Button('◀', id='prev', n_clicks=0, className='ci-btn'),
             dcc.Input(id='jump', type='number', value=1, min=1, step=1,
@@ -727,6 +913,10 @@ def make_app(df, spectro_dir, freq_max_khz):
         ], style={'display': 'flex', 'alignItems': 'center', 'flexWrap': 'wrap',
                   'gap': '6px', 'marginBottom': '16px'}),
 
+        # ── species stats panel (always visible, above overview) ──────────────
+        html.Div(id='species-stats'),
+
+        # ── overview bar ──────────────────────────────────────────────────────
         html.Div([
             html.Div([
                 html.Span('OVERVIEW', style={
@@ -743,8 +933,6 @@ def make_app(df, spectro_dir, freq_max_khz):
                   'borderRadius': '16px', 'padding': '16px 20px',
                   'marginBottom': '14px'}),
 
-        # Filmstrip + detail share a flex column so the detail panel is
-        # exactly as wide as the filmstrip panel above it.
         html.Div([
             html.Div([
                 rail_labels(),
@@ -769,6 +957,27 @@ def make_app(df, spectro_dir, freq_max_khz):
               'padding': '28px 32px', 'maxWidth': '100%', 'boxSizing': 'border-box',
               'background': BG, 'minHeight': '100vh', 'color': INK})
 
+    # ── confusion quick-buttons set the mode dropdown ─────────────────────────
+    @app.callback(
+        Output('mode', 'value'),
+        Input('btn-tp', 'n_clicks'),
+        Input('btn-fp', 'n_clicks'),
+        Input('btn-fn', 'n_clicks'),
+        Input('btn-tn', 'n_clicks'),
+        State('mode', 'value'),
+        prevent_initial_call=True,
+    )
+    def confusion_buttons(tp_c, fp_c, fn_c, tn_c, current_mode):
+        mapping = {
+            'btn-tp': 'true_positive',
+            'btn-fp': 'false_positive',
+            'btn-fn': 'false_negative',
+            'btn-tn': 'true_negative',
+        }
+        trig = ctx.triggered_id
+        return mapping.get(trig, current_mode)
+
+    # ── main render callback ──────────────────────────────────────────────────
     @app.callback(
         Output('filmstrip', 'children'),
         Output('status', 'children'),
@@ -776,6 +985,7 @@ def make_app(df, spectro_dir, freq_max_khz):
         Output('jump', 'value'),
         Output('overview', 'children'),
         Output('detail', 'children'),
+        Output('species-stats', 'children'),
         Input('prev', 'n_clicks'), Input('next', 'n_clicks'),
         Input('gobtn', 'n_clicks'), Input('mode', 'value'),
         Input('species', 'value'),
@@ -799,12 +1009,14 @@ def make_app(df, spectro_dir, freq_max_khz):
             page = min(n_pages - 1, int(trig['seg']) // PAGE_SIZE)
         page = min(max(0, page or 0), n_pages - 1)
 
+        stats = species_stats_panel(sub)
+
         if n == 0:
             empty = [html.Div('No segments match this view.', style={
                         'padding': '40px', 'color': INK_FAINT,
                         'fontFamily': 'ui-monospace, monospace'})]
             return (empty, 'No segments match the current view.', page, 1,
-                    html.Div(), detail_panel(None, prob_sets))
+                    html.Div(), detail_panel(None, prob_sets), stats)
 
         lo, hi = page * PAGE_SIZE, min(page * PAGE_SIZE + PAGE_SIZE, n)
         window = sub.iloc[lo:hi]
@@ -814,10 +1026,9 @@ def make_app(df, spectro_dir, freq_max_khz):
                 for p, (_, r) in enumerate(window.iterrows())]
         status = (f"segments {lo + 1:,}–{hi:,} of {n:,}   ·   "
                   f"page {page + 1} / {n_pages}   ·   view: {mode}   ·   species: {species}")
-        # detail panel now shows ALL segments in the current window
         detail_rows = [(p, r) for p, (_, r) in enumerate(window.iterrows())]
         detail = detail_panel(detail_rows, prob_sets)
-        return cols, status, page, page + 1, overview_bars(sub, page), detail
+        return cols, status, page, page + 1, overview_bars(sub, page), detail, stats
 
     return app
 
