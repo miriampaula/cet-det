@@ -32,3 +32,4 @@ models/
 # -------------------------
 inference/dashboard_fin/data/detections.json
 inference/dashboard/data/detections.json
+inference/dashboard_fin_version/data/detections.json
