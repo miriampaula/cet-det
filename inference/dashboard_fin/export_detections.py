@@ -3,7 +3,7 @@ export_detections.py — Generate data/detections.json for CET·DET from your re
 
 Usage:
 python export_detections.py \
-  --arbas              "/data2/mromaniuc/cet-det/inference/inference_arbas/comparison/arbas_comparison_5s_v3.csv" \
+  --arbas              "/data2/mromaniuc/cet-det/inference/inference_arbas/comparison/arbas_comparison_5sec_segments.csv" \
   --harrapatu          "/data2/mromaniuc/cet-det/inference/inference_harrapatu/comparison/harrapatu_comparison_5sec_segments.csv" \
   --arbas-spec-dir     "/data2/mromaniuc/cet-det/inference/inference_arbas/spectrograms/spectrograms" \
   --harrapatu-spec-dir "/data2/mromaniuc/cet-det/inference/inference_harrapatu/spectrograms/spectrograms" \
@@ -14,7 +14,7 @@ python export_detections.py \
 
 For opening the html:
   python -m http.server 8080
-  open http://localhost:8080/cetdet.html
+  open http://localhost:8080/index.html
 
 Spectrogram naming conventions (per 5-second segment):
 
@@ -23,25 +23,18 @@ Spectrogram naming conventions (per 5-second segment):
       {DATASET}_{DATE}_{WAV_STEM}_{MM.SS_start}-{MM.SS_end}
 
   HARRAPATU:
-      6338_6338.251010055958_00.00-00.05.png
-      {STATION}_{WAV_STEM}_{MM.SS_start}-{MM.SS_end}
+      L1_9488.250925084001_00.00-00.05.png   (L* = hydrophone location label)
+      6338_6338.251010055958_00.00-00.05.png (6338 rows use recorder id as prefix)
+      {LABEL}_{WAV_STEM}_{MM.SS_start}-{MM.SS_end}
+
+  The HARRAPATU L* prefix is NOT reliably available in the CSV (source_file is
+  empty for ~93% of rows), so we reverse-look-up the real filename on disk by
+  the prefix-independent key '{wav_stem}_{time_range}', which is unique.
 
   Where MM.SS uses zero-padded minutes and seconds, e.g.:
       offset  10 s  →  00.10-00.15
       offset  65 s  →  01.05-01.10
       offset 295 s  →  04.55-05.00
-
-Edit seg_spec_stem() below if your naming differs.
-
-Changes vs original:
-  - All 5 prediction strategies stored per segment:
-      pred_argmax / pred_vec / pred_pr / pred_consensus3 / pred_consensus2
-      fired_* and outcome_* columns for each strategy
-  - Spectrogram debug: prints first 5 missing stems + total counts
-  - HARRAPATU spec check now uses the correct wav stem (strips .wav properly)
-  - exp_annotated and source columns forwarded to output
-  - top4 now safe against completely missing prob_* columns
-  - prob_bg included as optional 11th entry in top4 so UI can show it if desired
 """
 
 import argparse, json, os, csv, re
@@ -98,35 +91,43 @@ def _fmt_time(seconds):
     return f'{s // 60:02d}.{s % 60:02d}'
 
 
-    
-def seg_spec_stem(wav_name, offset_s, dataset):
+def seg_spec_stem(wav_name, offset_s, dataset, source_file=''):
     """
     Return the filename stem (no extension, no directory) for the 5-second
     spectrogram starting at offset_s within wav_name.
 
-    Edit this function if your naming convention differs.
+    Used for ARBAS (and as a fallback). HARRAPATU now uses disk reverse-lookup
+    via seg_spec_key() + build_harrapatu_lookup() instead, because the L* prefix
+    is not reliably present in the CSV.
     """
-    stem  = Path(wav_name).stem          # '6338.240528160459'  (strips .wav)
+    stem  = Path(wav_name).stem
     start = int(float(offset_s))
     end   = start + 5
-    time_range = f'{_fmt_time(start)}-{_fmt_time(end)}'   # '00.10-00.15'
+    time_range = f'{_fmt_time(start)}-{_fmt_time(end)}'
 
     if dataset == 'ARBAS':
-        # Date from wav stem: YYMMDD embedded after station+dot
-        # e.g. 6338.240528160459  →  2024-05-28
         m = re.search(r'\d+\.(\d{2})(\d{2})(\d{2})', stem)
         date_str = f'20{m.group(1)}-{m.group(2)}-{m.group(3)}' if m else 'unknown-date'
         return f'ARBAS_{date_str}_{stem}_{time_range}'
-        # → ARBAS_2024-05-28_6338.240528160459_00.10-00.15
 
     elif dataset == 'HARRAPATU':
-        # Station = digits before first dot  e.g. '6338'
-        station = stem.split('.')[0]
-        return f'{station}_{stem}_{time_range}'
-        # → 6338_6338.251010055958_00.00-00.05
+        m_label = re.search(r'L(\d+)', source_file)
+        prefix  = f'L{m_label.group(1)}' if m_label else stem.split('.')[0]
+        return f'{prefix}_{stem}_{time_range}'
 
     else:
         return f'{stem}_{time_range}'
+
+
+def seg_spec_key(wav_name, offset_s):
+    """
+    Prefix-independent key for matching HARRAPATU spectrograms on disk.
+    '9488.250925084001' + offset 0  ->  '9488.250925084001_00.00-00.05'
+    """
+    stem  = Path(wav_name).stem
+    start = int(float(offset_s))
+    end   = start + 5
+    return f'{stem}_{_fmt_time(start)}-{_fmt_time(end)}'
 
 
 # ── helpers ────────────────────────────────────────────────────────────────────
@@ -213,7 +214,6 @@ def read_strategies(row, suffix):
     return out
 
 
-
 def build_spec_index(spec_dir, spec_ext):
     """Return a set of stems (no extension) present in spec_dir."""
     if not spec_dir:
@@ -227,8 +227,68 @@ def build_spec_index(spec_dir, spec_ext):
     except OSError as e:
         print(f'  Warning: could not list spec dir {spec_dir}: {e}')
         return set()
-    
-    
+
+
+def build_harrapatu_lookup(spec_dir, spec_ext):
+    """
+    Build a reverse-lookup index for HARRAPATU spectrograms.
+
+    Maps the prefix-independent key '{wav_stem}_{time_range}' to the full
+    filename stem (which carries the correct L* / recorder prefix):
+
+        '9488.250925084001_00.00-00.05'  ->  'L1_9488.250925084001_00.00-00.05'
+        '6338.251010055958_00.00-00.05'  ->  '6338_6338.251010055958_00.00-00.05'
+
+    Verified unique: every key maps to exactly one prefix on disk.
+    """
+    if not spec_dir:
+        return {}
+    pat = re.compile(r'^[A-Za-z0-9]+_(.+\.\d{12}_\d{2}\.\d{2}-\d{2}\.\d{2})$')
+    lookup = {}
+    try:
+        for f in os.listdir(spec_dir):
+            if not f.endswith(spec_ext):
+                continue
+            full_stem = Path(f).stem
+            m = pat.match(full_stem)
+            if m:
+                lookup[m.group(1)] = full_stem
+    except OSError as e:
+        print(f'  Warning: could not list spec dir {spec_dir}: {e}')
+    return lookup
+
+
+def build_arbas_lookup(spec_dir, spec_ext):
+    """
+    Build a reverse-lookup index for ARBAS spectrograms.
+
+    Maps the prefix/date-independent key '{wav_stem}_{time_range}' to the full
+    filename stem (which carries the correct ARBAS_{date}_ prefix):
+
+        '6338.240528160459_00.10-00.15'
+            -> 'ARBAS_2024-05-28_6338.240528160459_00.10-00.15'
+
+    This avoids re-deriving the date prefix (which can disagree with the wav
+    stem for recordings near a day boundary). Verified unique on disk.
+    """
+    if not spec_dir:
+        return {}
+    # ARBAS_2024-05-28_6338.240528160459_00.10-00.15
+    pat = re.compile(r'^ARBAS_\d{4}-\d{2}-\d{2}_(.+\.\d{12}_\d{2}\.\d{2}-\d{2}\.\d{2})$')
+    lookup = {}
+    try:
+        for f in os.listdir(spec_dir):
+            if not f.endswith(spec_ext):
+                continue
+            full_stem = Path(f).stem
+            m = pat.match(full_stem)
+            if m:
+                lookup[m.group(1)] = full_stem
+    except OSError as e:
+        print(f'  Warning: could not list spec dir {spec_dir}: {e}')
+    return lookup
+
+
 # ── ARBAS ──────────────────────────────────────────────────────────────────────
 
 def process_arbas(csv_path, spec_dir, spec_ext, spec_base_url):
@@ -239,8 +299,8 @@ def process_arbas(csv_path, spec_dir, spec_ext, spec_base_url):
     missing_stems  = []   # for debug output
     total_segs     = 0
     found_spec     = 0
-    
-    arbas_spec_index = build_spec_index(spec_dir, spec_ext)
+
+    arbas_lookup = build_arbas_lookup(spec_dir, spec_ext)
 
     for w in wavs:
         r0 = w['segs'][0]
@@ -265,14 +325,15 @@ def process_arbas(csv_path, spec_dir, spec_ext, spec_base_url):
             t4      = top4(s)
             offset  = safe_float(s.get('offset_s', 0))
 
-            stem     = seg_spec_stem(w['wav'], offset, 'ARBAS')
-            has_spec = stem in arbas_spec_index
-            sp_path  = seg_spec_url(spec_base_url, stem, spec_ext) if has_spec else None
+            key       = seg_spec_key(w['wav'], offset)
+            full_stem = arbas_lookup.get(key)
+            has_spec  = full_stem is not None
+            sp_path   = seg_spec_url(spec_base_url, full_stem, spec_ext) if has_spec else None
             if has_spec:
                 any_spec = True
                 found_spec += 1
             elif spec_dir and len(missing_stems) < 5:
-                missing_stems.append(stem)
+                missing_stems.append(key)
 
             segs_out.append({
                 'o':       offset,
@@ -329,10 +390,9 @@ def process_harrapatu(csv_path, spec_dir, spec_ext, spec_base_url):
     missing_stems = []
     total_segs   = 0
     found_spec   = 0
-    
-    harrapatu_spec_index = build_spec_index(spec_dir, spec_ext)
 
-
+    # Reverse-lookup index: '{wav_stem}_{time_range}' -> full stem with L* prefix
+    harrapatu_lookup = build_harrapatu_lookup(spec_dir, spec_ext)
 
     for ivl in intervals:
         segs = ivl['segs']
@@ -355,15 +415,16 @@ def process_harrapatu(csv_path, spec_dir, spec_ext, spec_base_url):
             offset  = safe_float(s.get('offset_s', 0))
             wav     = s.get('wav_name', '')
 
-
-            stem     = seg_spec_stem(wav, offset, 'HARRAPATU')
-            has_spec = stem in harrapatu_spec_index
-            sp_path  = seg_spec_url(spec_base_url, stem, spec_ext) if has_spec else None
+            # Reverse-lookup the real filename (with correct L* prefix) from disk
+            key       = seg_spec_key(wav, offset)
+            full_stem = harrapatu_lookup.get(key)
+            has_spec  = full_stem is not None
+            sp_path   = seg_spec_url(spec_base_url, full_stem, spec_ext) if has_spec else None
             if has_spec:
                 any_spec = True
                 found_spec += 1
             elif spec_dir and len(missing_stems) < 5:
-                missing_stems.append(stem)
+                missing_stems.append(key)
 
             segs_out.append({
                 'o':       offset,
@@ -396,9 +457,9 @@ def process_harrapatu(csv_path, spec_dir, spec_ext, spec_base_url):
     # debug report
     print(f'  HARRAPATU spec check: {found_spec}/{total_segs} segments have spectrograms')
     if missing_stems:
-        print(f'  First {len(missing_stems)} missing stems (check your --harrapatu-spec-dir):')
-        for stem in missing_stems:
-            print(f'    {stem}{spec_ext}')
+        print(f'  First {len(missing_stems)} missing keys (check your --harrapatu-spec-dir):')
+        for key in missing_stems:
+            print(f'    {key}{spec_ext}')
 
     return out
 

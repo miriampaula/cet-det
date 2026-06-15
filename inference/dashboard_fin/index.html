@@ -55,10 +55,10 @@ button{cursor:pointer;border:none;font-family:inherit;}
     <div id="side-tabs" style="display:flex;gap:2px;padding:2px;background:#0c0f14;border:1px solid rgba(255,255,255,.08);border-radius:7px;"></div>
   </div>
   <div style="width:1px;height:22px;background:rgba(255,255,255,.08);flex:0 0 auto;"></div>
-  <button id="spec-btn" style="display:flex;align-items:center;gap:7px;padding:6px 11px;border-radius:7px;flex:0 0 auto;font-family:'IBM Plex Sans',sans-serif;font-size:11.5px;background:transparent;color:#7c8696;border:1px solid rgba(255,255,255,.08);">
-    <span id="spec-dot" style="width:13px;height:13px;border-radius:4px;flex:0 0 auto;border:1.5px solid #3a414e;background:transparent;display:block;"></span>
-    <span>Has spectrogram</span>
-  </button>
+  <div style="display:flex;align-items:center;gap:7px;flex:0 0 auto;">
+    <span class="sec-label">STRATEGY</span>
+    <select id="strat-sel" style="background:#161a22;color:#cdd6e2;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 8px;font-size:11.5px;cursor:pointer;font-family:'IBM Plex Mono',monospace;"></select>
+  </div>
   <div style="flex:1;min-width:14px;"></div>
   <div style="display:flex;align-items:center;gap:12px;flex:0 0 auto;font-family:'IBM Plex Mono',monospace;font-size:10.5px;">
     <span style="display:flex;align-items:center;gap:5px;color:#9aa6b6;"><span style="width:9px;height:9px;border-radius:2px;background:#3fd2e6;box-shadow:0 0 7px rgba(63,210,230,.5);"></span>MINE</span>
@@ -106,13 +106,15 @@ const OCNAME = { TP:'True positive', FP:'False positive', FN:'False negative', T
 const SPORDER= ['Ambig','Tt','Oo','Pm','Gg','Dd','Gm','Sc','Ba','Bp'];
 const MO     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
 const MAXCOL = 480, RAIL_CAP = 300;
+const STRATS = ['argmax','vec','pr','consensus2','consensus3'];
 
 // ── state ────────────────────────────────────────────────────────────────────
 const S = {
   data:null, datasetId:null,
   view:'overview', mode:'density',
   outcomes:{TP:true,FP:true,TN:true,FN:true},
-  speciesFilter:'all', side:'either', specOnly:false,
+  speciesFilter:'all', side:'either',
+  strategy:'argmax',
   selWav:null, selSeg:0
 };
 
@@ -135,19 +137,33 @@ function freqTicks(){
   }));
 }
 const p2=n=>String(n).padStart(2,'0');
-function fmtTime(ts){if(!ts)return'—';const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate())+' · '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
-function fmtDate(ts){const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate());}
+function fmtTime(ts){if(!ts)return'—';const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate())+' '+d.getUTCFullYear()+' · '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
+function fmtDate(ts){const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate())+' '+d.getUTCFullYear();}
 function fmtHour(ts){const d=new Date(ts);return p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
-function segPos(s){return s.p!=='bg';}
-function wavOutcome(w){const m=w.segs.some(segPos);return w.expDet?(m?'TP':'FN'):(m?'FP':'TN');}
+
+// ── authoritative per-segment accessors ──────────────────────────────────────
+// A segment is "positive (mine)" when it fired for the active strategy.
+function segPos(s){return !!(s.fired && s.fired[S.strategy]);}
+// The segment's outcome label comes straight from detections.json.
+function segOutcome(s){return (s.outcome && s.outcome[S.strategy]) || 'TN';}
+// Wav-level outcome (for the rail badge / density agreement ribbon) is derived
+// from its segments: worst-case priority FN > FP > TP > TN.
+function wavOutcome(w){
+  const ord=['FN','FP','TP','TN'];
+  let pick='TN';
+  w.segs.forEach(s=>{const oc=segOutcome(s);if(ord.indexOf(oc)<ord.indexOf(pick))pick=oc;});
+  return pick;
+}
 function spName(c){return(S.data&&S.data.species&&S.data.species[c])||c;}
 function getWavs(){return S.data.datasets[S.datasetId].wavs;}
-function passFilters(w){
-  if(!S.outcomes[w._oc])return false;
-  if(S.specOnly&&!w.spec)return false;
+
+// ── filtering ─────────────────────────────────────────────────────────────────
+// Does a single 5-sec segment pass the active filters?
+function segPassFilters(w,s){
+  if(!S.outcomes[segOutcome(s)])return false;
   const sp=S.speciesFilter;
   if(sp!=='all'){
-    const mH=w.segs.some(s=>segPos(s)&&s.t.some(([c,p])=>c===sp&&p>=0.05));
+    const mH=segPos(s)&&s.t4.cet.some(([c,p])=>c===sp&&p>=0.05);
     const eH=(w.expFlags&&w.expFlags[sp]!=null)||(w.expDet&&w.expSp===sp);
     if(S.side==='mine'&&!mH)return false;
     if(S.side==='expert'&&!eH)return false;
@@ -155,6 +171,8 @@ function passFilters(w){
   }
   return true;
 }
+// A wav passes if any of its segments passes (used for the review rail).
+function passFilters(w){return w.segs.some(s=>segPassFilters(w,s));}
 
 function buildCols(wavs){
   const n=wavs.length,bs=Math.max(1,Math.ceil(n/MAXCOL)),cols=[];
@@ -163,11 +181,89 @@ function buildCols(wavs){
 }
 function colTime(wavs,a,b){return fmtTime(wavs[a].t)+(b-a>1?' – '+fmtTime(wavs[b-1].t):'');}
 
+// Count 5-sec segment outcomes across the dataset, honoring active filters
+// (everything except the outcome filter itself, so the chips can show totals).
+function segOutcomeCounts(wavs,respectFilters){
+  const counts={TP:0,FP:0,TN:0,FN:0};
+  wavs.forEach(w=>w.segs.forEach(s=>{
+    if(respectFilters){
+      // species/side filter still applies; outcome filter does NOT (chips show full totals)
+      const sp=S.speciesFilter;
+      if(sp!=='all'){
+        const mH=segPos(s)&&s.t4.cet.some(([c,p])=>c===sp&&p>=0.05);
+        const eH=(w.expFlags&&w.expFlags[sp]!=null)||(w.expDet&&w.expSp===sp);
+        if(S.side==='mine'&&!mH)return;
+        if(S.side==='expert'&&!eH)return;
+        if(S.side==='either'&&!(mH||eH))return;
+      }
+    }
+    const oc=segOutcome(s);
+    if(counts[oc]!=null)counts[oc]++;
+  }));
+  return counts;
+}
+
+// ── recorder splitting ────────────────────────────────────────────────────────
+// Recorder id lives only in the spectrogram filename, e.g.
+//   spectrograms_harrapatu/L6_9488.251013171500_00.00-00.05.png  -> "9488"
+// We pull the numeric recorder token that follows the site prefix.
+function recorderOf(s){
+  const p=s&&s.specPath;
+  if(!p)return null;
+  const base=p.split('/').pop();           // L6_9488.251013171500_00.00-00.05.png
+  const m=base.match(/_(\d+)\./);          // first _<digits>. group
+  return m?m[1]:null;
+}
+// If a wav's segments come from more than one recorder, return one shallow-cloned
+// wav per recorder (each with only its own segments). Otherwise return [w].
+function splitByRecorder(w){
+  const byRec=new Map();
+  let anyNull=false;
+  w.segs.forEach(s=>{
+    const r=recorderOf(s);
+    if(r==null)anyNull=true;
+    const key=r==null?'_':r;
+    if(!byRec.has(key))byRec.set(key,[]);
+    byRec.get(key).push(s);
+  });
+  if(byRec.size<=1)return [w];           // single recorder (or all unknown) → unchanged
+  const groups=[];
+  byRec.forEach((segs,rec)=>{
+    const clone=Object.assign({},w);
+    clone.segs=segs;
+    clone.recorder=rec==='_'?null:rec;
+    clone.wav=w.wav+(clone.recorder?(' · '+clone.recorder):'');
+    groups.push(clone);
+  });
+  // stable, recorder-id order
+  groups.sort((a,b)=>String(a.recorder||'').localeCompare(String(b.recorder||'')));
+  return groups;
+}
+
 // ── boot ─────────────────────────────────────────────────────────────────────
 fetch('data/detections.json').then(r=>r.json()).then(data=>{
   S.data=data;
   S.datasetId=Object.keys(data.datasets)[0];
-  Object.values(data.datasets).forEach(ds=>ds.wavs.forEach(w=>{w._oc=wavOutcome(w);}));
+  // Some deployments (e.g. Harrapatu) merge multiple recorders into one wav —
+  // each 5-sec offset then appears once per recorder. Split those into one
+  // wav per recorder so each is its own minute with its own segments/outcome.
+  Object.values(data.datasets).forEach(ds=>{
+    const out=[];
+    ds.wavs.forEach(w=>{
+      const groups=splitByRecorder(w);
+      if(groups.length<=1){out.push(w);}
+      else{groups.forEach(g=>out.push(g));}
+    });
+    ds.wavs=out;
+  });
+  // sort each dataset's wavs chronologically
+  Object.values(data.datasets).forEach(ds=>{
+    ds.wavs.sort((a,b)=>(a.t||0)-(b.t||0)||String(a.recorder||'').localeCompare(String(b.recorder||'')));
+    ds.wavs.forEach(w=>{
+      w.segs.sort((a,b)=>(a.o||0)-(b.o||0));
+      w._oc=wavOutcome(w);
+    });
+  });
   document.getElementById('loading-screen').style.display='none';
   buildTopBar();
   buildFilterBar();
@@ -175,6 +271,10 @@ fetch('data/detections.json').then(r=>r.json()).then(data=>{
 }).catch(e=>{
   document.getElementById('loading-screen').innerHTML=`<div style="color:#f0604f;padding:20px;font-family:'IBM Plex Mono',monospace;">Failed to load: ${e.message}</div>`;
 });
+
+function recomputeWavOutcomes(){
+  Object.values(S.data.datasets).forEach(ds=>ds.wavs.forEach(w=>{w._oc=wavOutcome(w);}));
+}
 
 // ── top bar ───────────────────────────────────────────────────────────────────
 function buildTopBar(){
@@ -221,27 +321,49 @@ function buildFilterBar(){
   ['TP','FP','FN','TN'].forEach(code=>{
     const b=document.createElement('button');
     b.dataset.oc=code;
-    b.addEventListener('click',()=>{S.outcomes[code]=!S.outcomes[code];refreshOutcomeChips();if(S.view==='review')renderReview();});
+    b.addEventListener('click',()=>{S.outcomes[code]=!S.outcomes[code];refreshOutcomeChips();applyFilters();});
     oc.appendChild(b);
   });
   const sel=document.getElementById('sp-sel');
   sel.innerHTML='<option value="all">All species</option>';
   SPORDER.forEach(c=>{const o=document.createElement('option');o.value=c;o.textContent=c+' · '+spName(c);sel.appendChild(o);});
-  sel.addEventListener('change',e=>{S.speciesFilter=e.target.value;if(S.view==='review')renderReview();});
+  sel.addEventListener('change',e=>{S.speciesFilter=e.target.value;refreshOutcomeChips();applyFilters();});
   const st=document.getElementById('side-tabs');
   [['mine','Mine'],['expert','Expert'],['either','Either']].forEach(([v,l])=>{
     const b=document.createElement('button');
     b.textContent=l;b.dataset.side=v;
     b.style.cssText='padding:5px 10px;border-radius:6px;border:none;cursor:pointer;font-family:IBM Plex Mono,monospace;font-size:10.5px;';
-    b.addEventListener('click',()=>{S.side=v;refreshSideTabs();if(S.view==='review')renderReview();});
+    b.addEventListener('click',()=>{S.side=v;refreshSideTabs();refreshOutcomeChips();applyFilters();});
     st.appendChild(b);
   });
-  document.getElementById('spec-btn').addEventListener('click',()=>{S.specOnly=!S.specOnly;refreshSpecBtn();if(S.view==='review')renderReview();});
-  refreshOutcomeChips();refreshSideTabs();refreshSpecBtn();
+
+  // Strategy selector — all five strategies
+  const stratSel=document.getElementById('strat-sel');
+  (S.data?.strategies||STRATS).forEach(strat=>{
+    const o=document.createElement('option');
+    o.value=strat;
+    o.textContent=strat;
+    stratSel.appendChild(o);
+  });
+  stratSel.addEventListener('change',e=>{
+    S.strategy=e.target.value;
+    recomputeWavOutcomes();
+    refreshOutcomeChips();
+    applyFilters();
+  });
+
+  refreshOutcomeChips();refreshSideTabs();
 }
+
+// Re-render whichever screen is active so top-bar filters affect both.
+function applyFilters(){
+  if(S.view==='overview')renderOverview();
+  else renderReview();
+}
+
 function refreshOutcomeChips(){
-  const wavs=getWavs(),counts={TP:0,FP:0,TN:0,FN:0};
-  wavs.forEach(w=>counts[w._oc]++);
+  const wavs=getWavs();
+  const counts=segOutcomeCounts(wavs,true); // 5-sec segment counts, species/side applied
   document.querySelectorAll('#outcome-chips button').forEach(b=>{
     const code=b.dataset.oc,active=S.outcomes[code];
     b.innerHTML=`<span style="width:7px;height:7px;border-radius:2px;background:${OC[code]};display:inline-block;margin-right:2px;"></span><span style="font-size:11px;font-weight:600;">${code}</span>&nbsp;<span style="font-size:10px;color:${active?OC[code]:'#56606e'};font-weight:600;">${counts[code]}</span>`;
@@ -254,16 +376,6 @@ function refreshSideTabs(){
     b.style.background=a?(v==='mine'?'rgba(63,210,230,.16)':v==='expert'?'rgba(182,155,255,.16)':'rgba(255,255,255,.08)'):'transparent';
     b.style.color=a?(v==='mine'?'#7fe3f0':v==='expert'?'#cbb8ff':'#cdd6e2'):'#6b7484';
   });
-}
-function refreshSpecBtn(){
-  const on=S.specOnly;
-  const b=document.getElementById('spec-btn'),d=document.getElementById('spec-dot');
-  b.style.border='1px solid '+(on?'rgba(63,210,230,.3)':'rgba(255,255,255,.08)');
-  b.style.background=on?'rgba(63,210,230,.08)':'transparent';
-  b.style.color=on?'#cdd6e2':'#7c8696';
-  d.style.border='1.5px solid '+(on?'#3fd2e6':'#3a414e');
-  d.style.background=on?'#3fd2e6':'transparent';
-  d.style.boxShadow=on?'0 0 7px rgba(63,210,230,.5)':'none';
 }
 
 // ── screens ───────────────────────────────────────────────────────────────────
@@ -281,16 +393,22 @@ function renderOverview(){
   switchMode(S.mode);
 }
 
+// KPIs over filtered 5-sec segments.
 function renderKpis(){
-  const wavs=getWavs(),counts={TP:0,FP:0,TN:0,FN:0};
-  wavs.forEach(w=>counts[w._oc]++);
-  const total=wavs.length;
+  const wavs=getWavs();
+  const counts={TP:0,FP:0,TN:0,FN:0};
+  wavs.forEach(w=>w.segs.forEach(s=>{
+    if(!segPassFilters(w,s))return;
+    const oc=segOutcome(s);
+    if(counts[oc]!=null)counts[oc]++;
+  }));
+  const total=counts.TP+counts.FP+counts.TN+counts.FN;
   const prec=counts.TP+counts.FP?counts.TP/(counts.TP+counts.FP):0;
   const rec=counts.TP+counts.FN?counts.TP/(counts.TP+counts.FN):0;
   const f1=prec+rec?2*prec*rec/(prec+rec):0;
   const agree=total?(counts.TP+counts.TN)/total:0;
   const ks=[
-    {label:'MINUTES',value:String(total),unit:'min',color:'#e8edf4',frac:1},
+    {label:'SEGMENTS (5 s)',value:String(total),unit:'seg',color:'#e8edf4',frac:1},
     {label:'PRECISION',value:(prec*100).toFixed(1),unit:'%',color:'#43e08f',frac:prec},
     {label:'RECALL',value:(rec*100).toFixed(1),unit:'%',color:'#3fd2e6',frac:rec},
     {label:'F1',value:f1.toFixed(2),unit:'',color:'#b69bff',frac:f1},
@@ -322,7 +440,7 @@ function buildModeTabs(){
   refreshModeTabs();
 }
 function refreshModeTabs(){
-  const hints={density:'Spectral intensity = my model confidence per species, 5-second resolution.',bands:'Where my detections and the expert agree or conflict, minute by minute.',matrix:'Aggregate agreement at the minute level. Labels are argmax.'};
+  const hints={density:'Spectral intensity = my model confidence per species ('+S.strategy+'), 5-second resolution.',bands:'Where my detections ('+S.strategy+') and the expert agree or conflict, minute by minute.',matrix:'Aggregate agreement over 5-second segments. Labels are '+S.strategy+'.'};
   document.querySelectorAll('#mode-tabs button').forEach(b=>{
     const a=b.dataset.m===S.mode;
     b.style.background=a?'linear-gradient(180deg,#222a37,#1a212c)':'transparent';
@@ -340,12 +458,17 @@ function switchMode(m){
   else renderMatrix();
 }
 
+// For overview heatmaps/bands: a wav is "visible" if any segment passes filters.
+function visibleWavs(){return getWavs().filter(passFilters);}
+
 // ── density ───────────────────────────────────────────────────────────────────
 function renderDensity(){
   const panel=document.getElementById('density-panel');
   panel.innerHTML='';
   panel.style.cssText='background:#0e1116;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px 20px;animation:fadeUp .3s ease;';
-  const wavs=getWavs(),{cols,bs}=buildCols(wavs);
+  const wavs=visibleWavs();
+  if(!wavs.length){addEl(panel,'div','padding:40px;text-align:center;color:#5d6878;font-family:IBM Plex Mono,monospace;font-size:12px;','NO SEGMENTS MATCH FILTERS');return;}
+  const {cols,bs}=buildCols(wavs);
   const tsAll=wavs.map(w=>w.t).filter(Boolean);
   const days=new Set(wavs.map(w=>{const d=new Date(w.t);return d.getUTCFullYear()+'-'+d.getUTCMonth()+'-'+d.getUTCDate();})).size;
   const span=tsAll.length?(days+(days===1?' day':' days')+' · '+fmtDate(Math.min(...tsAll))+' → '+fmtDate(Math.max(...tsAll))):'';
@@ -354,19 +477,19 @@ function renderDensity(){
 
   addEl(panel,'div',`display:flex;align-items:center;gap:9px;margin-bottom:4px;`,
     `<span style="width:10px;height:10px;border-radius:3px;background:#3fd2e6;box-shadow:0 0 8px rgba(63,210,230,.5);"></span>
-     <span style="font-size:12px;font-weight:600;letter-spacing:.04em;">MY DETECTIONS</span>
+     <span style="font-size:12px;font-weight:600;letter-spacing:.04em;">MY DETECTIONS (${S.strategy})</span>
      <span style="font-size:10.5px;color:#5d6878;font-family:'IBM Plex Mono',monospace;">· per-species confidence · 5 s resolution</span>
      <span style="flex:1;"></span>
      <span style="font-size:10.5px;color:#8a94a4;font-family:'IBM Plex Mono',monospace;">${span}</span>`);
 
   const mineRows=addEl(panel,'div','margin:14px 0 4px;');
-  const mineSp=SPORDER.filter(c=>wavs.some(w=>w.segs.some(s=>segPos(s)&&s.t.some(([cc,p])=>cc===c&&p>=0.05))));
+  const mineSp=SPORDER.filter(c=>wavs.some(w=>w.segs.some(s=>segPos(s)&&s.t4.cet.some(([cc,p])=>cc===c&&p>=0.05))));
   mineSp.forEach(code=>{
     const row=addEl(mineRows,'div','display:flex;align-items:center;gap:10px;margin-bottom:3px;');
     addEl(row,'div',`width:150px;flex:0 0 auto;font-size:11px;color:#b6c0cd;font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,code+' · '+spName(code));
     const cells=addEl(row,'div','display:flex;flex:1;gap:1px;height:16px;');
     cols.forEach(([a,b])=>{
-      let v=0;for(let i=a;i<b;i++)wavs[i].segs.forEach(s=>{if(segPos(s)){const e=s.t.find(([cc])=>cc===code);if(e&&e[1]>v)v=e[1];}});
+      let v=0;for(let i=a;i<b;i++)wavs[i].segs.forEach(s=>{if(segPos(s)){const e=s.t4.cet.find(([cc])=>cc===code);if(e&&e[1]>v)v=e[1];}});
       const on=v>=0.05,cell=addEl(cells,'div',`flex:1 1 0;min-width:2px;border-radius:2px;cursor:pointer;background:${on?cmap(v):'#11151b'};${v>=0.7?'box-shadow:0 0 6px '+cmap(v)+';':''}`);
       cell.title=colTime(wavs,a,b)+' · '+spName(code)+' · '+(v>0?(v*100).toFixed(0)+'%':'—');
       cell.addEventListener('click',()=>goRev(wavs[a].wav));
@@ -380,17 +503,31 @@ function renderDensity(){
 
   const expRows=addEl(panel,'div','margin:14px 0 4px;');
   const expSp=Array.from(new Set(wavs.flatMap(w=>Object.keys(w.expFlags||{})))).sort((a,b)=>(SPORDER.indexOf(a)+99)-(SPORDER.indexOf(b)+99));
-  (expSp.length?expSp:['—']).forEach(code=>{
+  if(expSp.length){
+    // Per-species expert intensity rows from expFlags.
+    expSp.forEach(code=>{
+      const row=addEl(expRows,'div','display:flex;align-items:center;gap:10px;margin-bottom:3px;');
+      addEl(row,'div',`width:150px;flex:0 0 auto;font-size:11px;color:#c6b6ff;font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,code+' · '+spName(code));
+      const cells=addEl(row,'div','display:flex;flex:1;gap:1px;height:16px;');
+      cols.forEach(([a,b])=>{
+        let v=0;for(let i=a;i<b;i++){const f=wavs[i].expFlags&&wavs[i].expFlags[code];if(f!=null)v=Math.max(v,Math.min(1,f));}
+        const on=v>0,cell=addEl(cells,'div',`flex:1 1 0;min-width:2px;border-radius:2px;cursor:pointer;background:${on?'rgba(182,155,255,'+(0.35+v*0.6)+')':'#11151b'};${on?'box-shadow:0 0 6px rgba(182,155,255,.45);':''}`);
+        cell.title=colTime(wavs,a,b)+' · expert '+spName(code)+' · '+(on?'present':'—');
+        cell.addEventListener('click',()=>goRev(wavs[a].wav));
+      });
+    });
+  } else {
+    // No per-species flags — fall back to a presence/absence row from expDet/expSp.
     const row=addEl(expRows,'div','display:flex;align-items:center;gap:10px;margin-bottom:3px;');
-    addEl(row,'div',`width:150px;flex:0 0 auto;font-size:11px;color:#c6b6ff;font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,code+' · '+spName(code));
+    addEl(row,'div',`width:150px;flex:0 0 auto;font-size:11px;color:#c6b6ff;font-family:'IBM Plex Mono',monospace;text-align:right;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;`,'detection');
     const cells=addEl(row,'div','display:flex;flex:1;gap:1px;height:16px;');
     cols.forEach(([a,b])=>{
-      let v=0;for(let i=a;i<b;i++){const f=wavs[i].expFlags&&wavs[i].expFlags[code];if(f!=null)v=Math.max(v,Math.min(1,f));}
-      const on=v>0,cell=addEl(cells,'div',`flex:1 1 0;min-width:2px;border-radius:2px;cursor:pointer;background:${on?'rgba(182,155,255,'+(0.35+v*0.6)+')':'#11151b'};${on?'box-shadow:0 0 6px rgba(182,155,255,.45);':''}`);
-      cell.title=colTime(wavs,a,b)+' · expert '+spName(code)+' · '+(on?'present':'—');
+      let on=false,sp='';for(let i=a;i<b;i++)if(wavs[i].expDet){on=true;sp=wavs[i].expSp&&wavs[i].expSp!=='background'?wavs[i].expSp:'detected';}
+      const cell=addEl(cells,'div',`flex:1 1 0;min-width:2px;border-radius:2px;cursor:pointer;background:${on?'rgba(182,155,255,.85)':'#11151b'};${on?'box-shadow:0 0 6px rgba(182,155,255,.45);':''}`);
+      cell.title=colTime(wavs,a,b)+' · expert '+(on?sp:'none');
       cell.addEventListener('click',()=>goRev(wavs[a].wav));
     });
-  });
+  }
 
   const ocOrd=['FN','FP','TP','TN'];
   const ribRow=addEl(panel,'div','display:flex;align-items:center;gap:10px;margin-top:18px;');
@@ -418,12 +555,14 @@ function renderBands(){
   const panel=document.getElementById('bands-panel');
   panel.innerHTML='';
   panel.style.cssText='background:#0e1116;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:20px;animation:fadeUp .3s ease;';
-  const wavs=getWavs(),{cols}=buildCols(wavs);
+  const wavs=visibleWavs();
+  if(!wavs.length){addEl(panel,'div','padding:40px;text-align:center;color:#5d6878;font-family:IBM Plex Mono,monospace;font-size:12px;','NO SEGMENTS MATCH FILTERS');return;}
+  const {cols}=buildCols(wavs);
   const ocOrd=['FN','FP','TP','TN'];
   const goRev=wav=>{S.view='review';S.selWav=wav;S.selSeg=0;refreshViewTabs();switchScreen();};
 
   const lanes=[
-    {label:'MINE',color:'#3fd2e6',h:'20px',fn:([a,b])=>{let m=0;for(let i=a;i<b;i++)wavs[i].segs.forEach(s=>{if(segPos(s)&&s.mp>m)m=s.mp;});const on=m>0;return{wav:wavs[a].wav,bg:on?'rgba(63,210,230,'+(0.3+m*0.65)+')':'#141821',title:colTime(wavs,a,b)+' · mine '+(on?(m*100).toFixed(0)+'%':'none')};}},
+    {label:'MINE ('+S.strategy+')',color:'#3fd2e6',h:'20px',fn:([a,b])=>{let m=0;for(let i=a;i<b;i++)wavs[i].segs.forEach(s=>{if(segPos(s)&&s.mp>m)m=s.mp;});const on=m>0;return{wav:wavs[a].wav,bg:on?'rgba(63,210,230,'+(0.3+m*0.65)+')':'#141821',title:colTime(wavs,a,b)+' · mine '+(on?(m*100).toFixed(0)+'%':'none')};}},
     {label:'EXPERT',color:'#b69bff',h:'20px',fn:([a,b])=>{let on=false,sp='';for(let i=a;i<b;i++)if(wavs[i].expDet){on=true;sp=wavs[i].expSp||'detected';}return{wav:wavs[a].wav,bg:on?'rgba(182,155,255,.85)':'#141821',title:colTime(wavs,a,b)+' · expert '+(on?sp:'none')};}},
     {label:'OUTCOME',color:'#8b95a4',h:'26px',fn:([a,b])=>{let pick='TN';for(let i=a;i<b;i++){const oc=wavs[i]._oc;if(ocOrd.indexOf(oc)<ocOrd.indexOf(pick))pick=oc;}return{wav:wavs[a].wav,bg:OC[pick],title:colTime(wavs,a,b)+' · '+OCNAME[pick]};}}
   ];
@@ -454,13 +593,19 @@ function renderBands(){
 // ── matrix ────────────────────────────────────────────────────────────────────
 function renderMatrix(){
   const panel=document.getElementById('matrix-panel');
-  const wavs=getWavs(),counts={TP:0,FP:0,TN:0,FN:0};
-  wavs.forEach(w=>counts[w._oc]++);
+  const wavs=getWavs();
+  // 5-sec segment counts honoring species/side + outcome filters
+  const counts={TP:0,FP:0,TN:0,FN:0};
+  const segCounts={};SPORDER.forEach(c=>segCounts[c]=0);
+  wavs.forEach(w=>w.segs.forEach(s=>{
+    if(!segPassFilters(w,s))return;
+    const oc=segOutcome(s);
+    if(counts[oc]!=null)counts[oc]++;
+    if(segPos(s)){const top=s.pred[S.strategy];if(top&&top!=='bg'&&segCounts[top]!=null)segCounts[top]++;}
+  }));
   const prec=counts.TP+counts.FP?counts.TP/(counts.TP+counts.FP):0;
   const rec=counts.TP+counts.FN?counts.TP/(counts.TP+counts.FN):0;
   const f1=prec+rec?2*prec*rec/(prec+rec):0;
-  const segCounts={};SPORDER.forEach(c=>segCounts[c]=0);
-  wavs.forEach(w=>w.segs.forEach(s=>{if(segPos(s)&&segCounts[s.p]!=null)segCounts[s.p]++;}));
   const maxc=Math.max(1,...Object.values(segCounts));
   const spBars=SPORDER.filter(c=>segCounts[c]>0).sort((a,b)=>segCounts[b]-segCounts[a]).map(c=>`
     <div style="display:flex;align-items:center;gap:12px;margin-bottom:11px;">
@@ -470,8 +615,8 @@ function renderMatrix(){
     </div>`).join('');
   panel.innerHTML=`<div style="display:grid;grid-template-columns:minmax(380px,1.1fr) 1.4fr;gap:18px;animation:fadeUp .3s ease;">
     <div class="card" style="padding:22px;">
-      <div style="font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:4px;">CONFUSION MATRIX</div>
-      <div style="font-size:10.5px;color:#5d6878;margin-bottom:18px;">Argmax · a minute is "mine +" if any 5 s segment predicts a non-background class.</div>
+      <div style="font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:4px;">CONFUSION MATRIX (${S.strategy})</div>
+      <div style="font-size:10.5px;color:#5d6878;margin-bottom:18px;">Counts are 5-second segments, using the per-segment outcome labels.</div>
       <div style="display:flex;gap:10px;">
         <div style="font-size:9px;color:#7c8696;font-family:'IBM Plex Mono',monospace;letter-spacing:.1em;writing-mode:vertical-rl;transform:rotate(180deg);text-align:center;">MY MODEL</div>
         <div style="flex:1;">
@@ -500,8 +645,8 @@ function renderMatrix(){
           </div>`).join('')}
       </div>
       <div class="card" style="padding:20px;flex:1;">
-        <div style="font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:16px;">MY DETECTIONS BY SPECIES <span style="font-size:10px;color:#5d6878;font-weight:400;">· share of positive segments</span></div>
-        ${spBars}
+        <div style="font-size:12px;font-weight:600;letter-spacing:.04em;margin-bottom:16px;">MY DETECTIONS BY SPECIES <span style="font-size:10px;color:#5d6878;font-weight:400;">· ${S.strategy} · positive 5-second segments</span></div>
+        ${spBars||'<div style="font-size:11px;color:#5d6878;">No positive segments under current filters.</div>'}
       </div>
     </div>
   </div>`;
@@ -526,8 +671,6 @@ function renderReview(){
     item.innerHTML=`<div style="display:flex;align-items:center;gap:8px;">
       <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:700;padding:2px 6px;border-radius:5px;color:#0a0c10;background:${OC[oc]};">${oc}</span>
       <span style="font-size:11.5px;color:#c6cfdb;font-family:'IBM Plex Mono',monospace;">${fmtTime(w.t)}</span>
-      <span style="flex:1;"></span>
-      <span style="font-size:9px;font-family:'IBM Plex Mono',monospace;color:${w.spec?'#3fd2e6':'#3a414e'};letter-spacing:.05em;">${w.spec?'◼ SPEC':'· · ·'}</span>
     </div>
     <div style="display:flex;gap:1px;height:7px;margin-top:8px;border-radius:2px;overflow:hidden;">
       ${w.segs.map(s=>`<div style="flex:1 1 0;background:${segPos(s)?cmap(s.mp):'#1a1f29'};"></div>`).join('')}
@@ -540,11 +683,14 @@ function renderReview(){
     listEl.appendChild(item);
   });
   if(sel){renderDetail(wavs.find(w=>w.wav===sel));}
-  else{document.getElementById('review-detail').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:80%;flex-direction:column;gap:10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6878;letter-spacing:.12em;">NO MINUTES MATCH FILTERS</div><div style="font-size:11px;color:#454e5c;">Relax the outcome / species / spectrogram filters above</div></div>`;}
+  else{document.getElementById('review-detail').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:80%;flex-direction:column;gap:10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6878;letter-spacing:.12em;">NO SEGMENTS MATCH FILTERS</div><div style="font-size:11px;color:#454e5c;">Relax the outcome / species filters above</div></div>`;}
 }
 
 function renderDetail(w){
   const det=document.getElementById('review-detail');
+  // Preserve scroll positions so clicking a tile does not jump us back to the top.
+  const prevDetScroll=det.scrollTop;
+  const prevTrainScroll=(()=>{const sc=document.getElementById('train-scroll');return sc?sc.scrollLeft:null;})();
   det.innerHTML='';
   if(!w)return;
   const oc=w._oc,nseg=w.segs.length;
@@ -555,7 +701,7 @@ function renderDetail(w){
 
   const hdr=addEl(det,'div','display:flex;align-items:center;gap:14px;margin-bottom:16px;',
     `<div><div style="font-size:16px;font-weight:600;font-family:'IBM Plex Mono',monospace;letter-spacing:.02em;">${w.wav}</div>
-     <div style="font-size:11px;color:#5d6878;margin-top:4px;">${fmtTime(w.t)} · ${w.dur||60} s · ${nseg} segments · ${posCount} positive</div></div>
+     <div style="font-size:11px;color:#5d6878;margin-top:4px;">${fmtTime(w.t)} · ${w.dur||60} s · ${nseg} segments · ${posCount} positive (${S.strategy})</div></div>
      <span style="flex:1;"></span>
      <span style="font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:700;padding:6px 12px;border-radius:8px;color:#0a0c10;background:${OC[oc]};">${OCNAME[oc]}</span>`);
 
@@ -567,6 +713,7 @@ function renderDetail(w){
      <span style="font-size:10px;color:#7c8696;font-family:'IBM Plex Mono',monospace;">log-mel · 0–${SPEC.fmax/1000} kHz</span>`);
 
   const scroll=addEl(trainCard,'div','overflow-x:auto;padding:0 18px 4px;');
+  scroll.id='train-scroll';
   const inner=addEl(scroll,'div','display:flex;align-items:flex-start;width:max-content;');
 
   const fax=addEl(inner,'div',`position:sticky;left:0;z-index:3;flex:0 0 auto;width:50px;background:#0e1116;padding-right:7px;`);
@@ -579,7 +726,7 @@ function renderDetail(w){
 
   w.segs.forEach((s,i)=>{
     const isPos=segPos(s),isSel=i===si;
-    const topConf=s.t[0]?s.t[0][1]:0;
+    const topConf=s.t4.cet[0]?s.t4.cet[0][1]:0;
     const accent=isPos?cmap(Math.max(topConf,s.mp)):'#39414e';
     const tile=addEl(inner,'div',`flex:0 0 auto;width:${tileW}px;margin-right:2px;cursor:pointer;border-radius:7px;overflow:hidden;border:2px solid ${isSel?'#e8edf4':'transparent'};box-shadow:${isSel?'0 0 0 3px rgba(232,237,244,.12)':'none'};opacity:${isPos?1:0.62};`);
     const imgWrap=addEl(tile,'div',`position:relative;width:100%;height:${trainH}px;background:#05060a;border-bottom:2px solid ${accent};`);
@@ -595,7 +742,7 @@ function renderDetail(w){
     addEl(tile,'div',`display:flex;align-items:center;gap:6px;padding:6px 8px;background:${isSel?'rgba(232,237,244,.07)':'rgba(255,255,255,.02)'};`,
       `<span style="font-size:9.5px;color:#7c8696;font-family:'IBM Plex Mono',monospace;">${s.o}–${s.o+5}s</span>
        <span style="flex:1;"></span>
-       <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:2px 6px;border-radius:4px;color:${isPos?'#050709':'#5d6878'};background:${isPos?accent:'#1c2029'};">${isPos?s.p:'bg'}</span>
+       <span style="font-family:'IBM Plex Mono',monospace;font-size:9.5px;font-weight:600;padding:2px 6px;border-radius:4px;color:${isPos?'#050709':'#5d6878'};background:${isPos?accent:'#1c2029'};">${s.pred[S.strategy]}</span>
        <span style="font-size:9.5px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:#9aa6b6;">${isPos?(topConf*100).toFixed(0)+'%':((1-s.mp)*100).toFixed(0)+'%'}</span>`);
     tile.addEventListener('click',()=>{S.selSeg=i;renderDetail(w);});
   });
@@ -604,33 +751,45 @@ function renderDetail(w){
 
   const bot=addEl(det,'div','display:grid;grid-template-columns:1.4fr 1fr;gap:16px;');
 
-  const predLabel=seg.p;
-  const rows=(seg.t||[]).map(([c,p])=>({code:c,prob:p,isBg:false}));
-  rows.push({code:'bg',prob:Math.max(0,1-seg.mp),isBg:true});
+  // ── PREDICTIONS: one set of bars, each class tagged with which strategies pick it.
+  const rows=(seg.t4.cet||[]).map(([c,p])=>({code:c,prob:p,isBg:false}));
+  rows.push({code:'bg',prob:seg.t4.bg,isBg:true});
   rows.sort((a,b)=>b.prob-a.prob);
+
+  // For each class, find which strategies predict it for this segment.
+  const stratColors = {argmax:'#3fd2e6', vec:'#7fe3f0', pr:'#6ee078', consensus2:'#f0604f', consensus3:'#f2b03c'};
+  const stratList=(S.data?.strategies||STRATS);
+  const stratForClass={};
+  rows.forEach(r=>{stratForClass[r.code]=stratList.filter(st=>seg.pred[st]===r.code);});
+
   const predCard=addEl(bot,'div','background:#0e1116;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px;');
   addEl(predCard,'div','display:flex;align-items:center;gap:10px;margin-bottom:5px;',
     `<span style="width:9px;height:9px;border-radius:2px;background:#3fd2e6;box-shadow:0 0 7px rgba(63,210,230,.5);"></span>
-     <span style="font-size:12px;font-weight:600;">MY PREDICTION</span>
+     <span style="font-size:12px;font-weight:600;">PREDICTIONS</span>
      <span style="flex:1;"></span>
      <span style="font-size:10.5px;color:#5d6878;font-family:'IBM Plex Mono',monospace;">${seg.o}s – ${seg.o+5}s</span>`);
   addEl(predCard,'div','font-size:10.5px;color:#5d6878;margin-bottom:16px;',
-    `Class probabilities · 5-second segment · argmax → <span style="color:#9aa6b6;font-family:'IBM Plex Mono',monospace;">${predLabel}</span>`);
+    `Class probabilities are identical across strategies — tags show which strategy picks each class as its label.`);
+
   rows.forEach(r=>{
-    const win=r.code===predLabel,bc=r.isBg?'#6b7484':cmap(r.prob);
-    const row=addEl(predCard,'div','margin-bottom:13px;');
-    addEl(row,'div','display:flex;align-items:center;gap:8px;margin-bottom:5px;',
-      `<span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:700;padding:2px 7px;border-radius:5px;color:${r.isBg?'#c6cfdb':'#050709'};background:${r.isBg?'#262d3a':cmap(Math.max(r.prob,0.25))};">${r.code}</span>
-       <span style="font-size:12px;color:${r.isBg?'#8a94a4':'#c6cfdb'};">${r.isBg?'Background (implied)':spName(r.code)}</span>
-       ${win?`<span style="font-family:'IBM Plex Mono',monospace;font-size:8.5px;font-weight:700;letter-spacing:.1em;padding:2px 6px;border-radius:4px;color:#0a0c10;background:#3fd2e6;">argmax</span>`:''}
+    const bc=r.isBg?'#6b7484':cmap(r.prob);
+    const tags=stratForClass[r.code]||[];
+    const tagHtml=tags.map(st=>`<span style="font-family:'IBM Plex Mono',monospace;font-size:8px;font-weight:700;letter-spacing:.06em;padding:1px 5px;border-radius:3px;color:#050709;background:${stratColors[st]||'#9aa6b6'};">${st}</span>`).join(' ');
+    const isWinner=tags.length>0;
+    const row=addEl(predCard,'div','margin-bottom:12px;');
+    addEl(row,'div','display:flex;align-items:center;gap:8px;margin-bottom:4px;flex-wrap:wrap;',
+      `<span style="font-family:'IBM Plex Mono',monospace;font-size:9px;font-weight:700;padding:1px 5px;border-radius:4px;color:${r.isBg?'#8a94a4':'#050709'};background:${r.isBg?'#262d3a':cmap(Math.max(r.prob,0.25))};">${r.code}</span>
+       <span style="font-size:10px;color:${r.isBg?'#8a94a4':'#b6c0cd'};">${r.isBg?'bg':spName(r.code)}</span>
+       ${tagHtml?`<span style="font-size:8px;color:#5d6878;font-family:'IBM Plex Mono',monospace;letter-spacing:.04em;">←</span> ${tagHtml}`:''}
        <span style="flex:1;"></span>
-       <span style="font-size:12px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${win?'#e8edf4':'#9aa6b6'};">${(r.prob*100).toFixed(1)}%</span>`);
-    addEl(row,'div','height:9px;border-radius:5px;background:#15191f;overflow:hidden;',
-      `<div style="height:100%;width:${Math.max(2,r.prob*100)}%;background:${bc};border-radius:5px;"></div>`);
+       <span style="font-size:9.5px;font-weight:600;font-family:'IBM Plex Mono',monospace;color:${isWinner?'#e8edf4':'#7c8696'};">${(r.prob*100).toFixed(1)}%</span>`);
+    addEl(row,'div','height:6px;border-radius:3px;background:#15191f;overflow:hidden;',
+      `<div style="height:100%;width:${Math.max(2,r.prob*100)}%;background:${bc};border-radius:3px;"></div>`);
   });
 
-  const autoOc=segPos(seg)?(w.expDet?'TP':'FP'):(w.expDet?'FN':'TN');
-  const expChips=w.expFlags?Object.entries(w.expFlags).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;background:rgba(182,155,255,.1);border:1px solid rgba(182,155,255,.22);font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:#c6b6ff;">${c} ${typeof v==='number'?v.toFixed(2):v}</span>`).join(''):'';
+  // ── EXPERT card. Segment outcome comes straight from detections.json.
+  const segOc=segOutcome(seg);
+  const expChips=w.expFlags&&Object.keys(w.expFlags).length?Object.entries(w.expFlags).sort((a,b)=>b[1]-a[1]).map(([c,v])=>`<span style="display:inline-flex;align-items:center;gap:5px;padding:4px 9px;border-radius:6px;background:rgba(182,155,255,.1);border:1px solid rgba(182,155,255,.22);font-size:10.5px;font-family:'IBM Plex Mono',monospace;color:#c6b6ff;">${c} ${typeof v==='number'?v.toFixed(2):v}</span>`).join(''):'';
   const expCard=addEl(bot,'div','background:#0e1116;border:1px solid rgba(255,255,255,.07);border-radius:14px;padding:18px 20px;');
   addEl(expCard,'div','display:flex;align-items:center;gap:10px;margin-bottom:14px;',
     `<span style="width:9px;height:9px;border-radius:2px;background:#b69bff;box-shadow:0 0 7px rgba(182,155,255,.5);"></span>
@@ -642,9 +801,13 @@ function renderDetail(w){
      <div style="font-size:11px;color:#7c8696;margin-top:6px;">${w.expDet?'Expert annotated this minute as a positive detection.':'Expert marked this minute as background / no call.'}</div>
      ${expChips?`<div style="margin-top:14px;display:flex;flex-wrap:wrap;gap:6px;">${expChips}</div>`:''}
      <div style="margin-top:16px;padding-top:13px;border-top:1px solid rgba(255,255,255,.06);display:flex;align-items:center;gap:8px;">
-       <span style="font-size:10.5px;color:#5d6878;">Segment outcome (argmax):</span>
-       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;color:#0a0c10;background:${OC[autoOc]};">${autoOc}</span>
+       <span style="font-size:10.5px;color:#5d6878;">Segment outcome (${S.strategy}):</span>
+       <span style="font-family:'IBM Plex Mono',monospace;font-size:10px;font-weight:600;padding:2px 8px;border-radius:5px;color:#0a0c10;background:${OC[segOc]};">${segOc}</span>
      </div>`);
+
+  // Restore scroll positions after rebuild.
+  if(prevDetScroll!=null)det.scrollTop=prevDetScroll;
+  if(prevTrainScroll!=null){const sc=document.getElementById('train-scroll');if(sc)sc.scrollLeft=prevTrainScroll;}
 }
 
 // ── helpers ───────────────────────────────────────────────────────────────────
