@@ -27,4 +27,4 @@ models/
 !*.html
 
 
-!.gitignoreinference/dashboard/data/detections.json
+!.gitignoreinference/dashboard_fin/data/detections.json
