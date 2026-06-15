@@ -26,5 +26,5 @@ models/
 !*.json
 !*.html
 
-
-!.gitignoreinference/dashboard_fin/data/detections.json
+!.gitignore
+inference/dashboard_fin/data/detections.json
