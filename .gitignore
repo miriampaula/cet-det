@@ -25,6 +25,9 @@ models/
 !*.txt
 !*.json
 !*.html
-
 !.gitignore
+
+# -------------------------
+# 4. But ignore the huge detections.json (MUST come AFTER !*.json)
+# -------------------------
 inference/dashboard_fin/data/detections.json
