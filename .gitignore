@@ -24,6 +24,7 @@ models/
 !*.csv
 !*.txt
 !*.json
+!*.html
 
 
 !.gitignore

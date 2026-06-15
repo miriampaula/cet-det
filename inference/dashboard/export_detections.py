@@ -43,15 +43,22 @@ from pathlib import Path
 from datetime import datetime, timezone
 
 
-# ── species maps ───────────────────────────────────────────────────────────────
+
 CODE_MAP = {
+    # long forms (raw model output)
     'background': 'bg', 'Delphinidae_unknown': 'Ambig',
     'Tursiops_truncatus': 'Tt', 'Balaenoptera_acutorostrata': 'Ba',
     'Balaenoptera_physalus': 'Bp', 'Delphinus_delphis': 'Dd',
     'Globicephala_melas': 'Gm', 'Grampus_griseus': 'Gg',
     'Orcinus_orca': 'Oo', 'Physeter_macrocephalus': 'Pm',
     'Stenella_coeruleoalba': 'Sc', 'ba': 'Ba',
+    # short forms (already normalised by notebook)
+    'bg': 'bg', 'Ambig': 'Ambig', 'Tt': 'Tt', 'Ba': 'Ba',
+    'Bp': 'Bp', 'Dd': 'Dd', 'Gm': 'Gm', 'Gg': 'Gg',
+    'Oo': 'Oo', 'Pm': 'Pm', 'Sc': 'Sc',
+    'uncertain': 'bg',
 }
+
 SP_COLS = ['Ba', 'Bp', 'Ambig', 'Dd', 'Gm', 'Gg', 'Oo', 'Pm', 'Sc', 'Tt']
 EXP_COLS_ARBAS = ['Ambig', 'Bb', 'Dc', 'Dd', 'Gg', 'Gm', 'Lo', 'Oo', 'Pm', 'Sc', 'Tt', 'Zc']
 SPECIES_NAMES = {
@@ -206,23 +213,37 @@ def process_arbas(csv_path, spec_dir, spec_ext, spec_base_url):
 
 def process_harrapatu(csv_path, spec_dir, spec_ext, spec_base_url):
     rows = read_csv(csv_path)
-    wavs = group_by_wav(rows)
-    out  = []
 
-    for w in wavs:
-        exp_det  = any(s.get('exp_cetacean_detected', 'False') == 'True' for s in w['segs'])
+    # group by interval, not wav_name — multiple recorders per 5-min bucket
+    intervals, ivl_map = [], {}
+    for r in rows:
+        key = r.get('interval') or r['wav_name']
+        if key not in ivl_map:
+            ivl_map[key] = {'interval': key, 'segs': []}
+            intervals.append(ivl_map[key])
+        ivl_map[key]['segs'].append(r)
+
+    out = []
+    for ivl in intervals:
+        segs = ivl['segs']
+        r0   = segs[0]
+
+        exp_det = any(s.get('exp_cetacean_detected', 'False') == 'True' for s in segs)
+        ivl_outcome = r0.get('outcome', '')
+
         segs_out = []
         mine_pos = False
         any_spec = False
 
-        for s in w['segs']:
+        for s in segs:
             p_code = CODE_MAP.get(s.get('pred_argmax', 'background'), 'bg')
             mp     = round(float(s.get('max_cetacean_prob') or 0), 4)
-            oc     = s.get('outcome', '')
+            oc     = s.get('seg_outcome', '')
             t4     = top4(s)
             offset = float(s.get('offset_s', 0))
+            wav    = s.get('wav_name', '')
 
-            stem     = seg_spec_stem(w['wav'], offset, 'HARRAPATU')
+            stem     = seg_spec_stem(wav, offset, 'HARRAPATU')
             has_spec = check_spec(spec_dir, stem, spec_ext)
             sp_path  = seg_spec_url(spec_base_url, stem, spec_ext) if has_spec else None
             if has_spec:
@@ -235,29 +256,22 @@ def process_harrapatu(csv_path, spec_dir, spec_ext, spec_base_url):
             if p_code != 'bg':
                 mine_pos = True
 
-        # millisecond-level expert box
-        # If you have start_ms / end_ms columns in your CSV, uncomment:
-        # ann = [s for s in w['segs'] if s.get('expert_annotated','False')=='True']
-        # box = None
-        # if ann and exp_det:
-        #     box = {
-        #         'start': float(ann[0].get('start_ms', 0)) / 1000,
-        #         'end':   float(ann[0].get('end_ms',   5000)) / 1000,
-        #     }
-        box = None
-
         out.append({
-            'wav': w['wav'], 't': parse_ts(w['wav']), 'dur': 300,
-            'expDet': exp_det, 'expSp': 'Tt' if exp_det else 'no_label',
-            'minePos': mine_pos,
-            'spec': any_spec,
+            'wav':      r0.get('wav_name', ivl['interval']),
+            'interval': ivl['interval'],
+            't':        parse_ts(ivl['interval']),
+            'dur':      300,
+            'expDet':   exp_det,
+            'expSp':    'Tt' if exp_det else 'no_label',
+            'outcome':  ivl_outcome,
+            'minePos':  mine_pos,
+            'spec':     any_spec,
             'specPath': None,
-            'box': box,
-            'segs': segs_out,
+            'box':      None,
+            'segs':     segs_out,
         })
 
     return out
-
 
 # ── main ───────────────────────────────────────────────────────────────────────
 

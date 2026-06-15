@@ -1,0 +1,500 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>CET-DET Detection Dashboard</title>
+<style>
+  :root {
+    --bg: #0f1117;
+    --panel: #1a1d27;
+    --border: #2a2d3e;
+    --accent: #4f8ef7;
+    --accent2: #7c5cbf;
+    --green: #3dba74;
+    --red: #e05252;
+    --orange: #e08a3c;
+    --yellow: #d4b83a;
+    --muted: #666b80;
+    --text: #d0d4e8;
+    --text-dim: #8890ab;
+  }
+  * { box-sizing: border-box; margin: 0; padding: 0; }
+  body { background: var(--bg); color: var(--text); font-family: 'Segoe UI', system-ui, sans-serif; font-size: 13px; height: 100vh; display: flex; flex-direction: column; }
+
+  /* Header */
+  #header { background: var(--panel); border-bottom: 1px solid var(--border); padding: 10px 16px; display: flex; align-items: center; gap: 16px; flex-shrink: 0; }
+  #header h1 { font-size: 15px; font-weight: 600; color: var(--accent); letter-spacing: 0.04em; }
+  #header .subtitle { color: var(--text-dim); font-size: 12px; }
+  #header .spacer { flex: 1; }
+  #header .meta { color: var(--text-dim); font-size: 11px; text-align: right; }
+
+  /* Layout */
+  #layout { display: flex; flex: 1; overflow: hidden; }
+
+  /* Sidebar */
+  #sidebar { width: 300px; min-width: 220px; background: var(--panel); border-right: 1px solid var(--border); display: flex; flex-direction: column; overflow: hidden; }
+  #filters { padding: 12px; border-bottom: 1px solid var(--border); display: flex; flex-direction: column; gap: 8px; }
+  .filter-label { font-size: 10px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 2px; }
+  select, input[type=text] { width: 100%; background: var(--bg); color: var(--text); border: 1px solid var(--border); border-radius: 4px; padding: 5px 8px; font-size: 12px; }
+  select:focus, input:focus { outline: none; border-color: var(--accent); }
+  .filter-row { display: flex; gap: 6px; }
+  .filter-row select { flex: 1; }
+  #stats-bar { padding: 8px 12px; border-bottom: 1px solid var(--border); font-size: 11px; color: var(--text-dim); display: flex; justify-content: space-between; align-items: center; }
+  #wav-list { flex: 1; overflow-y: auto; }
+  .wav-item { padding: 8px 12px; border-bottom: 1px solid var(--border); cursor: pointer; transition: background 0.1s; }
+  .wav-item:hover { background: #21253a; }
+  .wav-item.active { background: #1e2a4a; border-left: 3px solid var(--accent); }
+  .wav-name { font-size: 11px; font-family: monospace; color: var(--text); margin-bottom: 3px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .wav-time { font-size: 10px; color: var(--text-dim); margin-bottom: 4px; }
+  .wav-badges { display: flex; gap: 4px; flex-wrap: wrap; }
+  .badge { font-size: 9px; padding: 1px 5px; border-radius: 3px; font-weight: 600; letter-spacing: 0.04em; }
+  .badge-expert { background: #2d4a6b; color: #7fb5f5; }
+  .badge-mine { background: #2d4a3a; color: #6dd49a; }
+  .badge-fp { background: #4a2d2d; color: #e08888; }
+  .badge-bg { background: #2a2d3e; color: var(--text-dim); }
+  .badge-species { background: #3a2d4a; color: #c4a0e8; }
+
+  /* Pagination */
+  #pagination { padding: 8px 12px; border-top: 1px solid var(--border); display: flex; justify-content: space-between; align-items: center; background: var(--panel); flex-shrink: 0; }
+  .page-btn { background: var(--bg); border: 1px solid var(--border); color: var(--text); padding: 3px 10px; border-radius: 3px; cursor: pointer; font-size: 11px; }
+  .page-btn:hover { border-color: var(--accent); }
+  .page-btn:disabled { opacity: 0.3; cursor: default; }
+  #page-info { font-size: 11px; color: var(--text-dim); }
+
+  /* Main panel */
+  #main { flex: 1; overflow-y: auto; padding: 16px; display: flex; flex-direction: column; gap: 16px; }
+  #empty-state { display: flex; align-items: center; justify-content: center; height: 100%; color: var(--text-dim); font-size: 14px; }
+
+  /* WAV detail */
+  .section-title { font-size: 11px; text-transform: uppercase; letter-spacing: 0.08em; color: var(--text-dim); margin-bottom: 8px; }
+  #wav-detail-header { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+  .detail-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(160px, 1fr)); gap: 10px; margin-top: 8px; }
+  .detail-item label { font-size: 10px; color: var(--text-dim); display: block; margin-bottom: 2px; }
+  .detail-item .val { font-size: 12px; font-weight: 500; }
+  .val-pos { color: var(--green); }
+  .val-neg { color: var(--muted); }
+  .val-species { color: #c4a0e8; }
+
+  /* Segments */
+  #segments-section { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+  .timeline-wrap { display: flex; align-items: flex-end; gap: 2px; margin-bottom: 12px; }
+  .seg-bar { flex: 1; min-width: 0; border-radius: 2px 2px 0 0; cursor: pointer; transition: opacity 0.1s; position: relative; }
+  .seg-bar:hover { opacity: 0.8; }
+  .timeline-labels { display: flex; justify-content: space-between; font-size: 9px; color: var(--text-dim); margin-bottom: 12px; }
+
+  .seg-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(260px, 1fr)); gap: 10px; }
+  .seg-card { background: var(--bg); border: 1px solid var(--border); border-radius: 5px; padding: 10px; cursor: pointer; transition: border-color 0.15s; }
+  .seg-card:hover { border-color: var(--accent); }
+  .seg-card.active-seg { border-color: var(--accent); background: #1a2038; }
+  .seg-card-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 6px; }
+  .seg-offset { font-size: 11px; font-family: monospace; color: var(--text); }
+  .seg-outcome { font-size: 10px; padding: 1px 5px; border-radius: 3px; font-weight: 600; }
+  .oc-TP { background: #1e4a2e; color: #5de89a; }
+  .oc-TN { background: #1a1d27; color: var(--muted); }
+  .oc-FP { background: #4a1e1e; color: #e07070; }
+  .oc-FN { background: #4a3a1e; color: #e0b060; }
+  .ag-both_positive { background: #1e4a2e; color: #5de89a; }
+  .ag-both_negative { background: #1a1d27; color: var(--muted); }
+  .ag-only_mine { background: #4a3a1e; color: #e0b060; }
+  .ag-only_expert { background: #4a1e4a; color: #d080e0; }
+
+  /* Prob bars */
+  .prob-rows { display: flex; flex-direction: column; gap: 3px; }
+  .prob-row { display: flex; align-items: center; gap: 6px; }
+  .prob-sp { width: 48px; font-size: 10px; color: var(--text-dim); text-align: right; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+  .prob-bar-bg { flex: 1; height: 6px; background: var(--border); border-radius: 3px; overflow: hidden; }
+  .prob-bar-fill { height: 100%; border-radius: 3px; background: var(--accent); }
+  .prob-val { width: 32px; font-size: 10px; color: var(--text-dim); text-align: right; }
+
+  /* Spectrogram */
+  #spec-viewer { background: var(--panel); border: 1px solid var(--border); border-radius: 6px; padding: 14px; }
+  #spec-viewer img { max-width: 100%; border-radius: 4px; display: block; image-rendering: pixelated; }
+  .spec-meta { font-size: 11px; color: var(--text-dim); margin-bottom: 8px; }
+  .freq-axis { display: flex; flex-direction: column; align-items: flex-end; font-size: 9px; color: var(--text-dim); margin-right: 4px; }
+  .spec-container { display: flex; }
+  .spec-freq-labels { display: flex; flex-direction: column; justify-content: space-between; font-size: 9px; color: var(--text-dim); padding-right: 4px; padding-top: 2px; padding-bottom: 2px; }
+  .spec-img-wrap { flex: 1; min-width: 0; }
+
+  /* Loading */
+  #loading { position: fixed; inset: 0; background: var(--bg); display: flex; align-items: center; justify-content: center; flex-direction: column; gap: 12px; z-index: 100; }
+  .spinner { width: 36px; height: 36px; border: 3px solid var(--border); border-top-color: var(--accent); border-radius: 50%; animation: spin 0.8s linear infinite; }
+  @keyframes spin { to { transform: rotate(360deg); } }
+
+  /* Scrollbar */
+  ::-webkit-scrollbar { width: 6px; }
+  ::-webkit-scrollbar-track { background: transparent; }
+  ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 3px; }
+</style>
+</head>
+<body>
+
+<div id="loading">
+  <div class="spinner"></div>
+  <div style="color:var(--text-dim)">Loading detections…</div>
+</div>
+
+<div id="header" style="display:none">
+  <h1>CET-DET</h1>
+  <span class="subtitle">Cetacean Detection Dashboard</span>
+  <div class="spacer"></div>
+  <div class="meta" id="header-meta"></div>
+</div>
+
+<div id="layout" style="display:none">
+  <!-- Sidebar -->
+  <div id="sidebar">
+    <div id="filters">
+      <div>
+        <div class="filter-label">Dataset</div>
+        <select id="f-dataset">
+          <option value="ARBAS">ARBAS (60s windows)</option>
+          <option value="HARRAPATU">HARRAPATU (300s windows)</option>
+        </select>
+      </div>
+      <div>
+        <div class="filter-label">Expert detection</div>
+        <select id="f-expert">
+          <option value="">All</option>
+          <option value="true">Positive (expert detected)</option>
+          <option value="false">Negative</option>
+        </select>
+      </div>
+      <div>
+        <div class="filter-label">Model detection</div>
+        <select id="f-model">
+          <option value="">All</option>
+          <option value="true">Positive (model detected)</option>
+          <option value="false">Negative</option>
+        </select>
+      </div>
+      <div id="f-ag-wrap">
+        <div class="filter-label">Agreement (ARBAS)</div>
+        <select id="f-agreement">
+          <option value="">All</option>
+          <option value="both_positive">Both positive</option>
+          <option value="only_mine">Only model</option>
+          <option value="only_expert">Only expert</option>
+          <option value="both_negative">Both negative</option>
+        </select>
+      </div>
+      <div id="f-oc-wrap" style="display:none">
+        <div class="filter-label">Outcome (HARRAPATU)</div>
+        <select id="f-outcome">
+          <option value="">All</option>
+          <option value="TP">TP – True Positive</option>
+          <option value="TN">TN – True Negative</option>
+          <option value="FP">FP – False Positive</option>
+          <option value="FN">FN – False Negative</option>
+        </select>
+      </div>
+      <div>
+        <div class="filter-label">Expert species</div>
+        <select id="f-species">
+          <option value="">All</option>
+        </select>
+      </div>
+      <div>
+        <div class="filter-label">Search filename</div>
+        <input type="text" id="f-search" placeholder="e.g. 6338…">
+      </div>
+    </div>
+    <div id="stats-bar">
+      <span id="stats-text">— wavs</span>
+      <span id="stats-segs" style="color:var(--text-dim)"></span>
+    </div>
+    <div id="wav-list"></div>
+    <div id="pagination">
+      <button class="page-btn" id="btn-prev" onclick="changePage(-1)">← Prev</button>
+      <span id="page-info">Page 1</span>
+      <button class="page-btn" id="btn-next" onclick="changePage(1)">Next →</button>
+    </div>
+  </div>
+
+  <!-- Main -->
+  <div id="main">
+    <div id="empty-state">← Select a recording</div>
+  </div>
+</div>
+
+<script>
+// ── Config ──────────────────────────────────────────────────────────
+const DATA_PATH = 'data/detections.json';
+const MAX_FREQ_KHZ = 16;
+const PAGE_SIZE = 50;
+
+// ── State ────────────────────────────────────────────────────────────
+let allData = null;
+let currentDataset = 'ARBAS';
+let filtered = [];
+let page = 0;
+let selectedWav = null;
+let selectedSeg = null;
+
+// ── Boot ─────────────────────────────────────────────────────────────
+fetch(DATA_PATH)
+  .then(r => r.json())
+  .then(data => {
+    allData = data;
+    document.getElementById('loading').style.display = 'none';
+    document.getElementById('header').style.display = 'flex';
+    document.getElementById('layout').style.display = 'flex';
+    document.getElementById('header-meta').textContent = 'Generated ' + new Date(allData.generated).toLocaleDateString();
+    initFilters();
+    applyFilters();
+  })
+  .catch(e => {
+    document.getElementById('loading').innerHTML = `<div style="color:var(--red)">Failed to load data: ${e.message}</div>`;
+  });
+
+// ── Filter init ──────────────────────────────────────────────────────
+function initFilters() {
+  document.getElementById('f-dataset').addEventListener('change', e => {
+    currentDataset = e.target.value;
+    document.getElementById('f-ag-wrap').style.display = currentDataset === 'ARBAS' ? '' : 'none';
+    document.getElementById('f-oc-wrap').style.display = currentDataset === 'HARRAPATU' ? '' : 'none';
+    populateSpeciesFilter();
+    page = 0; selectedWav = null; applyFilters();
+  });
+  ['f-expert','f-model','f-agreement','f-outcome','f-species'].forEach(id => {
+    document.getElementById(id).addEventListener('change', () => { page = 0; applyFilters(); });
+  });
+  let searchTimer;
+  document.getElementById('f-search').addEventListener('input', () => {
+    clearTimeout(searchTimer);
+    searchTimer = setTimeout(() => { page = 0; applyFilters(); }, 250);
+  });
+  populateSpeciesFilter();
+}
+
+function populateSpeciesFilter() {
+  const ds = allData.datasets[currentDataset];
+  const spSet = new Set(ds.wavs.map(w => w.expSp).filter(Boolean));
+  const sel = document.getElementById('f-species');
+  sel.innerHTML = '<option value="">All</option>';
+  [...spSet].sort().forEach(sp => {
+    const opt = document.createElement('option');
+    opt.value = sp;
+    opt.textContent = sp + (allData.species[sp] ? ' – ' + allData.species[sp] : '');
+    sel.appendChild(opt);
+  });
+}
+
+// ── Filter logic ─────────────────────────────────────────────────────
+function applyFilters() {
+  const ds = allData.datasets[currentDataset];
+  const fExpert = document.getElementById('f-expert').value;
+  const fModel = document.getElementById('f-model').value;
+  const fAg = document.getElementById('f-agreement').value;
+  const fOc = document.getElementById('f-outcome').value;
+  const fSp = document.getElementById('f-species').value;
+  const fSearch = document.getElementById('f-search').value.toLowerCase();
+
+  filtered = ds.wavs.filter(w => {
+    if (fExpert !== '' && String(w.expDet) !== fExpert) return false;
+    if (fModel !== '' && String(w.minePos) !== fModel) return false;
+    if (fSp && w.expSp !== fSp) return false;
+    if (fSearch && !w.wav.toLowerCase().includes(fSearch)) return false;
+    if (fAg && currentDataset === 'ARBAS') {
+      if (!w.segs.some(s => s.ag === fAg)) return false;
+    }
+    if (fOc && currentDataset === 'HARRAPATU') {
+      if (!w.segs.some(s => s.oc === fOc)) return false;
+    }
+    return true;
+  });
+
+  const totalSegs = filtered.reduce((a, w) => a + w.segs.length, 0);
+  document.getElementById('stats-text').textContent = filtered.length.toLocaleString() + ' recordings';
+  document.getElementById('stats-segs').textContent = totalSegs.toLocaleString() + ' segs';
+
+  renderList();
+}
+
+// ── List rendering ───────────────────────────────────────────────────
+function renderList() {
+  const list = document.getElementById('wav-list');
+  list.innerHTML = '';
+  const start = page * PAGE_SIZE;
+  const slice = filtered.slice(start, start + PAGE_SIZE);
+  const totalPages = Math.max(1, Math.ceil(filtered.length / PAGE_SIZE));
+
+  slice.forEach(w => {
+    const div = document.createElement('div');
+    div.className = 'wav-item' + (selectedWav === w ? ' active' : '');
+    const dt = new Date(w.t);
+    const timeStr = dt.toISOString().replace('T',' ').slice(0,19);
+    const badges = buildWavBadges(w);
+    div.innerHTML = `
+      <div class="wav-name" title="${w.wav}">${w.wav}</div>
+      <div class="wav-time">${timeStr} · ${w.dur}s</div>
+      <div class="wav-badges">${badges}</div>`;
+    div.addEventListener('click', () => selectWav(w, div));
+    list.appendChild(div);
+  });
+
+  document.getElementById('page-info').textContent = `Page ${page+1} / ${totalPages}`;
+  document.getElementById('btn-prev').disabled = page === 0;
+  document.getElementById('btn-next').disabled = page >= totalPages - 1;
+}
+
+function buildWavBadges(w) {
+  const parts = [];
+  if (w.expDet) parts.push(`<span class="badge badge-expert">EXPERT+</span>`);
+  if (w.minePos) parts.push(`<span class="badge badge-mine">MODEL+</span>`);
+  if (w.expSp && w.expSp !== 'background' && w.expSp !== 'no_label')
+    parts.push(`<span class="badge badge-species">${w.expSp}</span>`);
+  if (!w.expDet && !w.minePos) parts.push(`<span class="badge badge-bg">bg</span>`);
+  if (w.expDet && !w.minePos) parts.push(`<span class="badge badge-fp" style="background:#3a1e4a;color:#c080e0">FN</span>`);
+  if (!w.expDet && w.minePos) parts.push(`<span class="badge badge-fp">FP</span>`);
+  return parts.join('');
+}
+
+function changePage(delta) {
+  const totalPages = Math.ceil(filtered.length / PAGE_SIZE);
+  page = Math.max(0, Math.min(totalPages - 1, page + delta));
+  renderList();
+}
+
+// ── WAV selection ────────────────────────────────────────────────────
+function selectWav(w, el) {
+  selectedWav = w;
+  selectedSeg = null;
+  document.querySelectorAll('.wav-item').forEach(e => e.classList.remove('active'));
+  el.classList.add('active');
+  renderDetail(w);
+}
+
+function renderDetail(w) {
+  const main = document.getElementById('main');
+  main.innerHTML = '';
+
+  // Header
+  const header = document.createElement('div');
+  header.id = 'wav-detail-header';
+  const dt = new Date(w.t);
+  const spName = allData.species[w.expSp] || w.expSp;
+  header.innerHTML = `
+    <div class="section-title">Recording</div>
+    <div style="font-size:13px;font-family:monospace;margin-bottom:8px">${w.wav}</div>
+    <div class="detail-grid">
+      <div class="detail-item"><label>Date / Time</label><div class="val">${dt.toISOString().replace('T',' ').slice(0,19)}</div></div>
+      <div class="detail-item"><label>Duration</label><div class="val">${w.dur}s</div></div>
+      <div class="detail-item"><label>Expert detection</label><div class="val ${w.expDet ? 'val-pos' : 'val-neg'}">${w.expDet ? '✓ Positive' : '✗ Negative'}</div></div>
+      <div class="detail-item"><label>Expert species</label><div class="val val-species">${spName || '—'}</div></div>
+      <div class="detail-item"><label>Model detection</label><div class="val ${w.minePos ? 'val-pos' : 'val-neg'}">${w.minePos ? '✓ Positive' : '✗ Negative'}</div></div>
+      <div class="detail-item"><label>Segments</label><div class="val">${w.segs.length}</div></div>
+      ${w.box ? `<div class="detail-item"><label>Expert box</label><div class="val" style="font-size:10px">${JSON.stringify(w.box)}</div></div>` : ''}
+      ${w.expFlags && Object.keys(w.expFlags).length ? `<div class="detail-item" style="grid-column:1/-1"><label>Expert flags</label><div class="val" style="font-size:10px;color:var(--text-dim)">${Object.entries(w.expFlags).map(([k,v])=>`${k}:${v}`).join(' · ')}</div></div>` : ''}
+    </div>`;
+  main.appendChild(header);
+
+  // Timeline
+  const timelineSection = document.createElement('div');
+  timelineSection.id = 'segments-section';
+  timelineSection.innerHTML = `<div class="section-title">Segments (${w.segs.length} × 5s)</div>`;
+
+  // Mini timeline bar
+  if (w.segs.length > 0) {
+    const tlWrap = document.createElement('div');
+    tlWrap.className = 'timeline-wrap';
+    const maxProb = Math.max(...w.segs.map(s => s.mp));
+    w.segs.forEach((s, i) => {
+      const bar = document.createElement('div');
+      bar.className = 'seg-bar';
+      const h = Math.max(4, Math.round(s.mp * 40));
+      bar.style.height = h + 'px';
+      bar.style.background = segColor(s);
+      bar.title = `${fmtOffset(s.o)}: ${s.p} (${(s.mp*100).toFixed(1)}%)`;
+      bar.addEventListener('click', () => scrollToSeg(i));
+      tlWrap.appendChild(bar);
+    });
+    timelineSection.appendChild(tlWrap);
+    const tlLabels = document.createElement('div');
+    tlLabels.className = 'timeline-labels';
+    tlLabels.innerHTML = `<span>0s</span><span>${w.dur/2}s</span><span>${w.dur}s</span>`;
+    timelineSection.appendChild(tlLabels);
+  }
+
+  // Segment cards
+  const grid = document.createElement('div');
+  grid.className = 'seg-grid';
+  grid.id = 'seg-grid';
+  w.segs.forEach((s, i) => {
+    const card = document.createElement('div');
+    card.className = 'seg-card';
+    card.id = 'seg-' + i;
+    const labelTag = currentDataset === 'ARBAS'
+      ? `<span class="seg-outcome ag-${s.ag}">${s.ag.replace('_', ' ')}</span>`
+      : `<span class="seg-outcome oc-${s.oc}">${s.oc}</span>`;
+    const probRows = s.t.map(([sp, prob]) => `
+      <div class="prob-row">
+        <span class="prob-sp" title="${allData.species[sp]||sp}">${sp}</span>
+        <div class="prob-bar-bg"><div class="prob-bar-fill" style="width:${(prob*100).toFixed(1)}%;background:${prob>0.5?'var(--accent)':'var(--accent2)'}"></div></div>
+        <span class="prob-val">${(prob*100).toFixed(0)}%</span>
+      </div>`).join('');
+    card.innerHTML = `
+      <div class="seg-card-header">
+        <span class="seg-offset">${fmtOffset(s.o)} – ${fmtOffset(s.o+5)}</span>
+        ${labelTag}
+      </div>
+      <div style="font-size:11px;color:var(--text-dim);margin-bottom:6px">
+        Predicted: <strong style="color:var(--text)">${s.p}</strong> &nbsp; max_prob: <strong style="color:var(--accent)">${(s.mp*100).toFixed(1)}%</strong>
+      </div>
+      <div class="prob-rows">${probRows}</div>
+      ${s.specPath ? `<div style="margin-top:8px;font-size:10px;color:var(--accent);cursor:pointer" onclick="showSpec('${s.specPath}','${fmtOffset(s.o)}–${fmtOffset(s.o+5)}')">🔍 View spectrogram</div>` : '<div style="margin-top:8px;font-size:10px;color:var(--muted)">No spectrogram</div>'}`;
+    grid.appendChild(card);
+  });
+  timelineSection.appendChild(grid);
+  main.appendChild(timelineSection);
+
+  // Spectrogram viewer placeholder
+  const specViewer = document.createElement('div');
+  specViewer.id = 'spec-viewer';
+  specViewer.style.display = 'none';
+  main.appendChild(specViewer);
+}
+
+function scrollToSeg(i) {
+  const el = document.getElementById('seg-' + i);
+  if (el) { el.scrollIntoView({ behavior: 'smooth', block: 'center' }); el.classList.add('active-seg'); setTimeout(() => el.classList.remove('active-seg'), 1200); }
+}
+
+function showSpec(path, label) {
+  const viewer = document.getElementById('spec-viewer');
+  viewer.style.display = 'block';
+  viewer.innerHTML = `
+    <div class="section-title">Spectrogram</div>
+    <div class="spec-meta">${label} · 0–${MAX_FREQ_KHZ} kHz</div>
+    <div class="spec-container">
+      <div class="spec-freq-labels">
+        <span>${MAX_FREQ_KHZ} kHz</span>
+        <span>${MAX_FREQ_KHZ/2} kHz</span>
+        <span>0 kHz</span>
+      </div>
+      <div class="spec-img-wrap">
+        <img src="${path}" alt="spectrogram" onerror="this.parentElement.innerHTML='<div style=color:var(--red);padding:8px>Image not found: ${path}</div>'">
+      </div>
+    </div>`;
+  viewer.scrollIntoView({ behavior: 'smooth', block: 'nearest' });
+}
+
+// ── Helpers ──────────────────────────────────────────────────────────
+function fmtOffset(sec) {
+  const m = Math.floor(sec / 60);
+  const s = Math.floor(sec % 60);
+  return m.toString().padStart(2,'0') + ':' + s.toString().padStart(2,'0');
+}
+
+function segColor(s) {
+  if (currentDataset === 'ARBAS') {
+    const map = { both_positive: '#3dba74', both_negative: '#2a2d3e', only_mine: '#e08a3c', only_expert: '#c060e0' };
+    return map[s.ag] || '#555';
+  } else {
+    const map = { TP: '#3dba74', TN: '#2a2d3e', FP: '#e05252', FN: '#e08a3c' };
+    return map[s.oc] || '#555';
+  }
+}
+</script>
+</body>
+</html>

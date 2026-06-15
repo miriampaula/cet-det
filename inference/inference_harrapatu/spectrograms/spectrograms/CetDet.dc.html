@@ -1,0 +1,804 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<script src="./support.js"></script>
+</head>
+<body>
+<x-dc>
+<template id="__bundler_thumbnail"><svg viewBox="0 0 80 56" xmlns="http://www.w3.org/2000/svg"><rect width="80" height="56" fill="#0a0c10"/><rect x="10" y="24" width="60" height="2" rx="1" fill="#1a2030"/><rect x="10" y="30" width="60" height="2" rx="1" fill="#1a2030"/><circle cx="40" cy="28" r="10" fill="none" stroke="#3fd2e6" stroke-width="1.5" opacity=".7"/><circle cx="40" cy="28" r="5" fill="none" stroke="#b69bff" stroke-width="1.5" opacity=".7"/><circle cx="40" cy="28" r="2" fill="#3fd2e6"/><line x1="16" y1="18" x2="16" y2="38" stroke="#f2b03c" stroke-width="1.5"/><line x1="24" y1="22" x2="24" y2="34" stroke="#43e08f" stroke-width="1.5"/><line x1="56" y1="20" x2="56" y2="36" stroke="#f2b03c" stroke-width="1.5"/><line x1="64" y1="24" x2="64" y2="32" stroke="#f0604f" stroke-width="1.5"/></svg></template>
+<helmet>
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=IBM+Plex+Sans:wght@400;500;600;700&family=IBM+Plex+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+<style>
+  * { box-sizing: border-box; }
+  html, body { margin: 0; padding: 0; background: #0a0c10; }
+  ::-webkit-scrollbar { width: 10px; height: 10px; }
+  ::-webkit-scrollbar-track { background: #0d1014; }
+  ::-webkit-scrollbar-thumb { background: #232a36; border-radius: 6px; border: 2px solid #0d1014; }
+  ::-webkit-scrollbar-thumb:hover { background: #2e3645; }
+  input[type=range]{ -webkit-appearance:none; appearance:none; height:4px; border-radius:3px; background:#262d3a; outline:none; }
+  input[type=range]::-webkit-slider-thumb{ -webkit-appearance:none; width:14px; height:14px; border-radius:50%; background:#e8edf4; cursor:pointer; box-shadow:0 0 0 3px rgba(63,210,230,.25); }
+  select{ font-family:'IBM Plex Mono', monospace; }
+  @keyframes shimmer { 0%{opacity:.35} 50%{opacity:.7} 100%{opacity:.35} }
+  @keyframes fadeUp { from{opacity:0; transform:translateY(6px)} to{opacity:1; transform:none} }
+</style>
+</helmet>
+
+<div style="height:100vh; display:flex; flex-direction:column; background:#0a0c10; color:#e8edf4; font-family:'IBM Plex Sans',system-ui,sans-serif; overflow:hidden;">
+
+  <!-- ===== TOP BAR ===== -->
+  <div style="display:flex; align-items:center; gap:20px; padding:0 18px; height:54px; flex:0 0 auto; background:linear-gradient(180deg,#12151b,#0e1116); border-bottom:1px solid rgba(255,255,255,.07);">
+    <div style="display:flex; align-items:center; gap:11px;">
+      <div style="width:26px; height:26px; border-radius:6px; background:linear-gradient(140deg,#3fd2e6,#b69bff); display:flex; align-items:center; justify-content:center; box-shadow:0 0 18px rgba(63,210,230,.35);">
+        <div style="width:11px; height:11px; border-radius:50%; border:2.5px solid #0a0c10;"></div>
+      </div>
+      <div style="line-height:1;">
+        <div style="font-size:15px; font-weight:700; letter-spacing:.14em;">CET·DET</div>
+        <div style="font-size:9.5px; color:#5d6878; letter-spacing:.22em; margin-top:3px; font-family:'IBM Plex Mono',monospace;">DETECTION REVIEW</div>
+      </div>
+    </div>
+
+    <div style="width:1px; height:26px; background:rgba(255,255,255,.08);"></div>
+
+    <!-- dataset switcher -->
+    <div style="display:flex; gap:3px; padding:3px; background:#0c0f14; border:1px solid rgba(255,255,255,.07); border-radius:9px;">
+      <sc-for list="{{ datasetTabs }}" as="d">
+        <button onClick="{{ d.onClick }}" style="{{ d.style }}">
+          <span style="font-weight:600; letter-spacing:.05em;">{{ d.id }}</span>
+          <span style="{{ d.subStyle }}">{{ d.sub }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="flex:1;"></div>
+
+    <!-- view tabs -->
+    <div style="display:flex; gap:2px; padding:3px; background:#0c0f14; border:1px solid rgba(255,255,255,.07); border-radius:9px;">
+      <sc-for list="{{ viewTabs }}" as="v">
+        <button onClick="{{ v.onClick }}" style="{{ v.style }}">{{ v.label }}</button>
+      </sc-for>
+    </div>
+  </div>
+
+  <!-- ===== FILTER BAR ===== -->
+  <div style="display:flex; align-items:center; gap:16px; padding:9px 18px; height:50px; flex:0 0 auto; background:#0d1015; border-bottom:1px solid rgba(255,255,255,.06); overflow-x:auto;">
+    <div style="display:flex; align-items:center; gap:7px; flex:0 0 auto;">
+      <span style="font-size:9px; color:#5d6878; letter-spacing:.16em; font-family:'IBM Plex Mono',monospace;">OUTCOME</span>
+      <sc-for list="{{ outcomeChips }}" as="c">
+        <button onClick="{{ c.onClick }}" title="{{ c.title }}" style="{{ c.style }}">
+          <span style="width:7px; height:7px; border-radius:2px; background:{{ c.color }}; flex:0 0 auto;"></span>
+          <span>{{ c.code }}</span>
+          <span style="{{ c.countStyle }}">{{ c.count }}</span>
+        </button>
+      </sc-for>
+    </div>
+
+    <div style="width:1px; height:22px; background:rgba(255,255,255,.08); flex:0 0 auto;"></div>
+
+    <div style="display:flex; align-items:center; gap:7px; flex:0 0 auto;">
+      <span style="font-size:9px; color:#5d6878; letter-spacing:.16em; font-family:'IBM Plex Mono',monospace;">SPECIES</span>
+      <select value="{{ speciesFilter }}" onChange="{{ onSpecies }}" style="background:#161a22; color:#cdd6e2; border:1px solid rgba(255,255,255,.1); border-radius:7px; padding:6px 8px; font-size:11.5px; cursor:pointer;">
+        <sc-for list="{{ speciesOptions }}" as="o">
+          <option value="{{ o.value }}">{{ o.label }}</option>
+        </sc-for>
+      </select>
+      <div style="display:flex; gap:2px; padding:2px; background:#0c0f14; border:1px solid rgba(255,255,255,.08); border-radius:7px;">
+        <sc-for list="{{ sideOptions }}" as="s">
+          <button onClick="{{ s.onClick }}" style="{{ s.style }}">{{ s.label }}</button>
+        </sc-for>
+      </div>
+    </div>
+
+    <div style="width:1px; height:22px; background:rgba(255,255,255,.08); flex:0 0 auto;"></div>
+
+    <button onClick="{{ onToggleSpec }}" style="{{ specOnlyStyle }}">
+      <span style="{{ specDotStyle }}"></span>
+      <span>Has spectrogram</span>
+    </button>
+
+    <div style="flex:1; min-width:14px;"></div>
+
+
+    <div style="width:1px; height:22px; background:rgba(255,255,255,.08); flex:0 0 auto;"></div>
+
+    <!-- legend -->
+    <div style="display:flex; align-items:center; gap:12px; flex:0 0 auto; font-family:'IBM Plex Mono',monospace; font-size:10.5px;">
+      <span style="display:flex; align-items:center; gap:5px; color:#9aa6b6;"><span style="width:9px;height:9px;border-radius:2px;background:#3fd2e6;box-shadow:0 0 7px rgba(63,210,230,.5);"></span>MINE</span>
+      <span style="display:flex; align-items:center; gap:5px; color:#9aa6b6;"><span style="width:9px;height:9px;border-radius:2px;background:#b69bff;box-shadow:0 0 7px rgba(182,155,255,.5);"></span>EXPERT</span>
+    </div>
+  </div>
+
+  <!-- ===== BODY ===== -->
+  <div style="flex:1 1 auto; overflow:auto; position:relative;">
+
+    <!-- loading -->
+    <sc-if value="{{ loading }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; align-items:center; justify-content:center; height:100%; flex-direction:column; gap:14px;">
+        <div style="width:160px; height:5px; border-radius:3px; background:linear-gradient(90deg,#3fd2e6,#b69bff); animation:shimmer 1.3s ease-in-out infinite;"></div>
+        <div style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5d6878; letter-spacing:.18em;">LOADING DETECTIONS…</div>
+      </div>
+    </sc-if>
+
+    <!-- ============ OVERVIEW ============ -->
+    <sc-if value="{{ isOverview }}" hint-placeholder-val="{{ true }}">
+      <div style="padding:18px 22px 40px;">
+
+        <!-- KPI strip -->
+        <div style="display:grid; grid-template-columns:repeat(6,1fr); gap:12px; margin-bottom:18px;">
+          <sc-for list="{{ kpis }}" as="k">
+            <div style="{{ k.cardStyle }}">
+              <div style="font-size:9px; color:#5d6878; letter-spacing:.16em; font-family:'IBM Plex Mono',monospace; margin-bottom:9px;">{{ k.label }}</div>
+              <div style="display:flex; align-items:baseline; gap:6px;">
+                <span style="{{ k.valueStyle }}">{{ k.value }}</span>
+                <span style="font-size:11px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ k.unit }}</span>
+              </div>
+              <div style="{{ k.barTrackStyle }}"><div style="{{ k.barFillStyle }}"></div></div>
+            </div>
+          </sc-for>
+        </div>
+
+        <!-- mode switch -->
+        <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+          <div style="display:flex; gap:3px; padding:3px; background:#0c0f14; border:1px solid rgba(255,255,255,.08); border-radius:9px;">
+            <sc-for list="{{ overviewTabs }}" as="o">
+              <button onClick="{{ o.onClick }}" style="{{ o.style }}">{{ o.label }}</button>
+            </sc-for>
+          </div>
+          <div style="font-size:11.5px; color:#5d6878;">{{ overviewHint }}</div>
+        </div>
+
+        <!-- ---- DENSITY HEATMAP ---- -->
+        <sc-if value="{{ isDensity }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px 20px; animation:fadeUp .3s ease;">
+            <div style="display:flex; align-items:center; gap:10px; margin-bottom:4px;">
+              <span style="width:10px;height:10px;border-radius:3px;background:#3fd2e6;box-shadow:0 0 8px rgba(63,210,230,.5);"></span>
+              <span style="font-size:12px; font-weight:600; letter-spacing:.04em;">MY DETECTIONS</span>
+              <span style="font-size:10.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">· per-species confidence over time · 5 s resolution</span>
+            </div>
+            <div style="margin:14px 0 4px;">
+              <sc-for list="{{ density.mineRows }}" as="row">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:3px;">
+                  <div style="width:150px; flex:0 0 auto; font-size:11px; color:#b6c0cd; font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.name }}</div>
+                  <div style="display:flex; flex:1; gap:1px; height:16px;">
+                    <sc-for list="{{ row.cells }}" as="cell">
+                      <div onClick="{{ cell.onClick }}" title="{{ cell.title }}" style="{{ cell.style }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <div style="display:flex; align-items:center; gap:10px; margin:20px 0 4px;">
+              <span style="width:10px;height:10px;border-radius:3px;background:#b69bff;box-shadow:0 0 8px rgba(182,155,255,.5);"></span>
+              <span style="font-size:12px; font-weight:600; letter-spacing:.04em;">EXPERT ANNOTATIONS</span>
+              <span style="font-size:10.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ density.expertNote }}</span>
+            </div>
+            <div style="margin:14px 0 4px;">
+              <sc-for list="{{ density.expertRows }}" as="row">
+                <div style="display:flex; align-items:center; gap:10px; margin-bottom:3px;">
+                  <div style="width:150px; flex:0 0 auto; font-size:11px; color:#c6b6ff; font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ row.name }}</div>
+                  <div style="display:flex; flex:1; gap:1px; height:16px;">
+                    <sc-for list="{{ row.cells }}" as="cell">
+                      <div onClick="{{ cell.onClick }}" title="{{ cell.title }}" style="{{ cell.style }}"></div>
+                    </sc-for>
+                  </div>
+                </div>
+              </sc-for>
+            </div>
+
+            <!-- outcome ribbon + time axis -->
+            <div style="display:flex; align-items:center; gap:10px; margin-top:18px;">
+              <div style="width:150px; flex:0 0 auto; font-size:11px; color:#7c8696; font-family:'IBM Plex Mono',monospace; text-align:right;">agreement</div>
+              <div style="display:flex; flex:1; gap:1px; height:9px;">
+                <sc-for list="{{ density.ribbon }}" as="cell">
+                  <div onClick="{{ cell.onClick }}" title="{{ cell.title }}" style="{{ cell.style }}"></div>
+                </sc-for>
+              </div>
+            </div>
+            <div style="display:flex; gap:10px; margin-top:7px;">
+              <div style="width:150px; flex:0 0 auto;"></div>
+              <div style="flex:1; display:flex; justify-content:space-between; font-size:9.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">
+                <sc-for list="{{ density.axis }}" as="t"><span>{{ t.label }}</span></sc-for>
+              </div>
+            </div>
+
+            <!-- colormap legend -->
+            <div style="display:flex; align-items:center; gap:10px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,.06);">
+              <span style="font-size:9.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">low</span>
+              <div style="width:180px; height:8px; border-radius:3px; background:linear-gradient(90deg,#0a0c1c,#1a2878,#226ec8,#1cb4be,#6ee078,#f2ec5a);"></div>
+              <span style="font-size:9.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">high&nbsp;confidence</span>
+              <span style="flex:1;"></span>
+              <span style="font-size:10.5px; color:#5d6878;">Click any cell to inspect that minute in Review</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ---- AGREEMENT BANDS ---- -->
+        <sc-if value="{{ isBands }}" hint-placeholder-val="{{ true }}">
+          <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:20px; animation:fadeUp .3s ease;">
+            <sc-for list="{{ bands.lanes }}" as="lane">
+              <div style="display:flex; align-items:center; gap:12px; margin-bottom:9px;">
+                <div style="width:120px; flex:0 0 auto; display:flex; align-items:center; gap:7px; justify-content:flex-end;">
+                  <span style="font-size:11px; font-weight:600; color:{{ lane.color }}; letter-spacing:.05em;">{{ lane.label }}</span>
+                </div>
+                <div style="display:flex; flex:1; gap:2px; height:{{ lane.height }};">
+                  <sc-for list="{{ lane.cells }}" as="cell">
+                    <div onClick="{{ cell.onClick }}" title="{{ cell.title }}" style="{{ cell.style }}" style-hover="{{ cell.hoverStyle }}"></div>
+                  </sc-for>
+                </div>
+              </div>
+            </sc-for>
+            <div style="display:flex; gap:12px; margin-top:9px;">
+              <div style="width:120px; flex:0 0 auto;"></div>
+              <div style="flex:1; display:flex; justify-content:space-between; font-size:9.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">
+                <sc-for list="{{ bands.axis }}" as="t"><span>{{ t.label }}</span></sc-for>
+              </div>
+            </div>
+            <div style="display:flex; align-items:center; gap:20px; margin-top:18px; padding-top:14px; border-top:1px solid rgba(255,255,255,.06);">
+              <sc-for list="{{ bands.legend }}" as="l">
+                <span style="display:flex; align-items:center; gap:6px; font-size:11px; color:#9aa6b6;">
+                  <span style="width:11px;height:11px;border-radius:3px;background:{{ l.color }};"></span>{{ l.label }}
+                </span>
+              </sc-for>
+              <span style="flex:1;"></span>
+              <span style="font-size:10.5px; color:#5d6878;">Each column = one {{ bands.unitLabel }}. Click to open in Review.</span>
+            </div>
+          </div>
+        </sc-if>
+
+        <!-- ---- CONFUSION MATRIX ---- -->
+        <sc-if value="{{ isMatrix }}" hint-placeholder-val="{{ true }}">
+          <div style="display:grid; grid-template-columns:minmax(380px,1.1fr) 1.4fr; gap:18px; animation:fadeUp .3s ease;">
+            <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:22px;">
+              <div style="font-size:12px; font-weight:600; letter-spacing:.04em; margin-bottom:4px;">CONFUSION MATRIX</div>
+              <div style="font-size:10.5px; color:#5d6878; margin-bottom:18px;">{{ matrix.note }}</div>
+              <div style="display:flex; gap:10px;">
+                <div style="display:flex; flex-direction:column; justify-content:center; gap:6px;">
+                  <div style="width:18px; font-size:9px; color:#7c8696; font-family:'IBM Plex Mono',monospace; letter-spacing:.1em; writing-mode:vertical-rl; transform:rotate(180deg); text-align:center; height:100%;">MY MODEL</div>
+                </div>
+                <div style="flex:1;">
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px; margin-bottom:8px;">
+                    <div style="text-align:center; font-size:9.5px; color:#7c8696; font-family:'IBM Plex Mono',monospace;">EXPERT +</div>
+                    <div style="text-align:center; font-size:9.5px; color:#7c8696; font-family:'IBM Plex Mono',monospace;">EXPERT −</div>
+                  </div>
+                  <div style="display:grid; grid-template-columns:1fr 1fr; gap:8px;">
+                    <sc-for list="{{ matrix.cells }}" as="m">
+                      <div style="{{ m.style }}">
+                        <div style="font-size:9px; color:#7c8696; letter-spacing:.12em; font-family:'IBM Plex Mono',monospace;">{{ m.code }}</div>
+                        <div style="font-size:30px; font-weight:600; font-family:'IBM Plex Mono',monospace; color:{{ m.color }}; line-height:1.1; margin-top:6px;">{{ m.count }}</div>
+                        <div style="font-size:10px; color:#7c8696; margin-top:3px;">{{ m.label }}</div>
+                      </div>
+                    </sc-for>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            <div style="display:flex; flex-direction:column; gap:18px;">
+              <div style="display:grid; grid-template-columns:repeat(3,1fr); gap:14px;">
+                <sc-for list="{{ matrix.metrics }}" as="me">
+                  <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px;">
+                    <div style="font-size:9px; color:#5d6878; letter-spacing:.14em; font-family:'IBM Plex Mono',monospace;">{{ me.label }}</div>
+                    <div style="font-size:30px; font-weight:600; font-family:'IBM Plex Mono',monospace; color:{{ me.color }}; margin-top:8px;">{{ me.value }}</div>
+                    <div style="height:5px; border-radius:3px; background:#1a1f29; margin-top:12px; overflow:hidden;"><div style="height:100%; width:{{ me.pct }}; background:{{ me.color }}; border-radius:3px;"></div></div>
+                    <div style="font-size:10px; color:#5d6878; margin-top:8px;">{{ me.sub }}</div>
+                  </div>
+                </sc-for>
+              </div>
+              <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:20px; flex:1;">
+                <div style="font-size:12px; font-weight:600; letter-spacing:.04em; margin-bottom:16px;">MY DETECTIONS BY SPECIES <span style="font-size:10px;color:#5d6878;font-weight:400;">· share of positive segments</span></div>
+                <sc-for list="{{ matrix.speciesBars }}" as="b">
+                  <div style="display:flex; align-items:center; gap:12px; margin-bottom:11px;">
+                    <div style="width:150px; flex:0 0 auto; font-size:11px; color:#b6c0cd; font-family:'IBM Plex Mono',monospace; text-align:right; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">{{ b.name }}</div>
+                    <div style="flex:1; height:13px; border-radius:4px; background:#15191f; overflow:hidden;"><div style="{{ b.fillStyle }}"></div></div>
+                    <div style="width:54px; flex:0 0 auto; font-size:11px; color:#9aa6b6; font-family:'IBM Plex Mono',monospace; text-align:right;">{{ b.count }}</div>
+                  </div>
+                </sc-for>
+              </div>
+            </div>
+          </div>
+        </sc-if>
+
+      </div>
+    </sc-if>
+
+    <!-- ============ REVIEW ============ -->
+    <sc-if value="{{ isReview }}" hint-placeholder-val="{{ true }}">
+      <div style="display:flex; height:100%; overflow:hidden;">
+
+        <!-- left rail -->
+        <div style="width:312px; flex:0 0 auto; border-right:1px solid rgba(255,255,255,.07); background:#0c0f14; display:flex; flex-direction:column; overflow:hidden;">
+          <div style="padding:13px 15px; border-bottom:1px solid rgba(255,255,255,.06); display:flex; align-items:center; justify-content:space-between;">
+            <span style="font-size:10px; color:#7c8696; letter-spacing:.16em; font-family:'IBM Plex Mono',monospace;">{{ review.listLabel }}</span>
+            <span style="font-size:11px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ review.listCount }}</span>
+          </div>
+          <div style="flex:1; overflow-y:auto; padding:8px;">
+            <sc-for list="{{ review.list }}" as="w" hint-placeholder-count="8">
+              <div onClick="{{ w.onClick }}" style="{{ w.style }}">
+                <div style="display:flex; align-items:center; gap:8px;">
+                  <span style="{{ w.chipStyle }}">{{ w.outcome }}</span>
+                  <span style="font-size:11.5px; color:#c6cfdb; font-family:'IBM Plex Mono',monospace;">{{ w.time }}</span>
+                  <span style="flex:1;"></span>
+                  <span style="{{ w.specStyle }}" title="{{ w.specTitle }}">{{ w.specIcon }}</span>
+                </div>
+                <div style="display:flex; gap:1px; height:7px; margin-top:8px; border-radius:2px; overflow:hidden;">
+                  <sc-for list="{{ w.mini }}" as="m"><div style="{{ m.style }}"></div></sc-for>
+                </div>
+                <div style="display:flex; align-items:center; gap:8px; margin-top:7px;">
+                  <span style="font-size:10px; color:#6b7484;">mine: <span style="color:#3fd2e6;font-family:'IBM Plex Mono',monospace;">{{ w.minePos }}</span></span>
+                  <span style="font-size:10px; color:#6b7484;">expert: <span style="{{ w.expStyle }}">{{ w.expLabel }}</span></span>
+                </div>
+              </div>
+            </sc-for>
+          </div>
+        </div>
+
+        <!-- main review -->
+        <div style="flex:1; overflow-y:auto; padding:18px 22px 40px;">
+          <sc-if value="{{ review.hasSel }}" hint-placeholder-val="{{ true }}">
+            <div>
+              <!-- header -->
+              <div style="display:flex; align-items:center; gap:14px; margin-bottom:16px;">
+                <div>
+                  <div style="font-size:16px; font-weight:600; font-family:'IBM Plex Mono',monospace; letter-spacing:.02em;">{{ review.sel.wav }}</div>
+                  <div style="font-size:11px; color:#5d6878; margin-top:4px;">{{ review.sel.subtitle }}</div>
+                </div>
+                <span style="flex:1;"></span>
+                <span style="{{ review.sel.outcomeChipStyle }}">{{ review.sel.outcomeText }}</span>
+              </div>
+
+              <!-- spectrogram card -->
+              <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:16px 18px 14px; margin-bottom:16px;">
+                <div style="display:flex; align-items:center; gap:9px; margin-bottom:11px;">
+                  <span style="font-size:11px; font-weight:600; letter-spacing:.04em; color:#b6c0cd;">SPECTROGRAM</span>
+                  <span style="font-size:10px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ review.sel.specMeta }}</span>
+                </div>
+
+                <sc-if value="{{ review.sel.hasSpec }}" hint-placeholder-val="{{ true }}">
+                  <div style="position:relative; border-radius:9px; overflow:hidden; border:1px solid rgba(255,255,255,.08); background:#05060a;">
+                    <div style="{{ review.sel.specBgStyle }}"></div>
+                    <!-- expert delimited box -->
+                    <sc-if value="{{ review.sel.hasBox }}" hint-placeholder-val="{{ false }}">
+                      <div title="{{ review.sel.box.title }}" style="{{ review.sel.box.style }}"></div>
+                    </sc-if>
+                    <!-- selected segment marker -->
+                    <div style="{{ review.sel.selMarkerStyle }}"></div>
+                  </div>
+                </sc-if>
+                <sc-if value="{{ review.sel.noSpec }}" hint-placeholder-val="{{ false }}">
+                  <div style="height:150px; border-radius:9px; border:1px dashed rgba(255,255,255,.13); background:repeating-linear-gradient(45deg,#10141a,#10141a 9px,#0d1116 9px,#0d1116 18px); display:flex; align-items:center; justify-content:center; flex-direction:column; gap:8px;">
+                    <span style="font-family:'IBM Plex Mono',monospace; font-size:11px; color:#5d6878; letter-spacing:.1em;">SPECTROGRAM NOT EXTRACTED YET</span>
+                    <span style="font-size:10.5px; color:#454e5c;">This ARBAS minute has no image — filter “Has spectrogram” to skip these</span>
+                  </div>
+                </sc-if>
+
+                <!-- segment track -->
+                <div style="display:flex; gap:2px; margin-top:10px; height:34px;">
+                  <sc-for list="{{ review.sel.track }}" as="s">
+                    <div onClick="{{ s.onClick }}" title="{{ s.title }}" style="{{ s.style }}" style-hover="{{ s.hoverStyle }}"></div>
+                  </sc-for>
+                </div>
+                <div style="display:flex; justify-content:space-between; font-size:9.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace; margin-top:6px;">
+                  <sc-for list="{{ review.sel.axis }}" as="t"><span>{{ t.label }}</span></sc-for>
+                </div>
+              </div>
+
+              <!-- detail row -->
+              <div style="display:grid; grid-template-columns:1.4fr 1fr; gap:16px;">
+                <!-- my labels -->
+                <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px;">
+                  <div style="display:flex; align-items:center; gap:10px; margin-bottom:5px;">
+                    <span style="width:9px;height:9px;border-radius:2px;background:#3fd2e6;box-shadow:0 0 7px rgba(63,210,230,.5);"></span>
+                    <span style="font-size:12px; font-weight:600;">MY PREDICTION</span>
+                    <span style="flex:1;"></span>
+                    <span style="font-size:10.5px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ review.sel.seg.tWindow }}</span>
+                  </div>
+                  <div style="font-size:10.5px; color:#5d6878; margin-bottom:16px;">Top-4 class probabilities · 5-second segment</div>
+                  <sc-for list="{{ review.sel.seg.top4 }}" as="p">
+                    <div style="margin-bottom:13px;">
+                      <div style="display:flex; align-items:center; gap:8px; margin-bottom:5px;">
+                        <span style="{{ p.codeStyle }}">{{ p.code }}</span>
+                        <span style="font-size:12px; color:#c6cfdb;">{{ p.name }}</span>
+                        <span style="flex:1;"></span>
+                        <span style="font-size:12px; font-weight:600; font-family:'IBM Plex Mono',monospace; color:{{ p.valueColor }};">{{ p.pct }}</span>
+                      </div>
+                      <div style="height:9px; border-radius:5px; background:#15191f; overflow:hidden;"><div style="{{ p.barStyle }}"></div></div>
+                    </div>
+                  </sc-for>
+                </div>
+
+                <!-- expert + verdict -->
+                <div style="display:flex; flex-direction:column; gap:16px;">
+                  <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px;">
+                    <div style="display:flex; align-items:center; gap:10px; margin-bottom:14px;">
+                      <span style="width:9px;height:9px;border-radius:2px;background:#b69bff;box-shadow:0 0 7px rgba(182,155,255,.5);"></span>
+                      <span style="font-size:12px; font-weight:600;">EXPERT</span>
+                      <span style="flex:1;"></span>
+                      <span style="font-size:10px; color:#5d6878; font-family:'IBM Plex Mono',monospace;">{{ review.sel.expGranLabel }}</span>
+                    </div>
+                    <div style="display:flex; align-items:baseline; gap:8px;">
+                      <span style="font-size:20px; font-weight:600; color:{{ review.sel.expColor }};">{{ review.sel.expTitle }}</span>
+                    </div>
+                    <div style="font-size:11px; color:#7c8696; margin-top:6px;">{{ review.sel.expDetail }}</div>
+                    <div style="margin-top:14px; display:flex; flex-wrap:wrap; gap:6px;">
+                      <sc-for list="{{ review.sel.expChips }}" as="c">
+                        <span style="display:inline-flex; align-items:center; gap:5px; padding:4px 9px; border-radius:6px; background:rgba(182,155,255,.1); border:1px solid rgba(182,155,255,.22); font-size:10.5px; font-family:'IBM Plex Mono',monospace; color:#c6b6ff;">{{ c.label }}</span>
+                      </sc-for>
+                    </div>
+                  </div>
+
+                  <!-- verdict / mark -->
+                  <div style="background:#0e1116; border:1px solid rgba(255,255,255,.07); border-radius:14px; padding:18px 20px; flex:1;">
+                    <div style="font-size:12px; font-weight:600; margin-bottom:5px;">MY VERDICT</div>
+                    <div style="font-size:10.5px; color:#5d6878; margin-bottom:14px;">Mark this segment after viewing the spectrogram</div>
+                    <div style="display:flex; gap:8px;">
+                      <button onClick="{{ review.sel.seg.onTP }}" style="{{ review.sel.seg.tpStyle }}">True positive</button>
+                      <button onClick="{{ review.sel.seg.onFP }}" style="{{ review.sel.seg.fpStyle }}">False positive</button>
+                    </div>
+                    <button onClick="{{ review.sel.seg.onClear }}" style="{{ review.sel.seg.clearStyle }}">Clear mark</button>
+                    <div style="margin-top:14px; padding-top:13px; border-top:1px solid rgba(255,255,255,.06); display:flex; align-items:center; gap:8px;">
+                      <span style="font-size:10.5px; color:#5d6878;">Auto outcome (argmax):</span>
+                      <span style="{{ review.sel.seg.autoChipStyle }}">{{ review.sel.seg.autoOutcome }}</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </sc-if>
+
+          <sc-if value="{{ review.empty }}" hint-placeholder-val="{{ false }}">
+            <div style="display:flex; align-items:center; justify-content:center; height:80%; flex-direction:column; gap:10px;">
+              <div style="font-family:'IBM Plex Mono',monospace; font-size:12px; color:#5d6878; letter-spacing:.12em;">NO SEGMENTS MATCH FILTERS</div>
+              <div style="font-size:11px; color:#454e5c;">Relax the outcome / species / spectrogram filters above</div>
+            </div>
+          </sc-if>
+        </div>
+      </div>
+    </sc-if>
+
+  </div>
+</div>
+</x-dc>
+<script type="text/x-dc" data-dc-script>
+class Component extends DCLogic {
+  state = {
+    data: null,
+    loading: true,
+    datasetId: 'ARBAS',
+    view: 'overview',
+    overviewMode: 'density',
+    threshold: 0.5,
+    outcomes: { TP: true, FP: true, TN: true, FN: true },
+    speciesFilter: 'all',
+    side: 'either',
+    specOnly: false,
+    selWav: null,
+    selSeg: 0,
+    marks: {}
+  };
+
+  componentDidMount() {
+    try { const m = JSON.parse(localStorage.getItem('cetdet_marks') || '{}'); this.setState({ marks: m }); } catch (e) {}
+    fetch('data/detections.json').then(r => r.json()).then(data => {
+      this.setState({ data, loading: false });
+    }).catch(e => { console.error('data load failed', e); this.setState({ loading: false }); });
+  }
+
+  // ---- constants ----
+  OC = { TP: '#43e08f', FP: '#f2b03c', FN: '#f0604f', TN: '#5a6573' };
+  OCNAME = { TP: 'True positive', FP: 'False positive', FN: 'False negative', TN: 'True negative' };
+  SPORDER = ['Ambig','Tt','Oo','Pm','Gg','Dd','Gm','Sc','Ba','Bp'];
+  SPNAME = { Ba:'Balaenoptera acut.', Bp:'Balaenoptera phys.', Ambig:'Delphinidae unkn.', Dd:'Delphinus delphis', Gm:'Globicephala melas', Gg:'Grampus griseus', Oo:'Orcinus orca', Pm:'Physeter macroc.', Sc:'Stenella coerul.', Tt:'Tursiops truncatus', bg:'Background', Dc:'Delphinid (Dc)', Bb:'Balaenoptera (Bb)', Lo:'Lagenorhynchus', Zc:'Ziphius cavirostris' };
+
+  cmap(t) {
+    t = Math.max(0, Math.min(1, t));
+    const s = [[0,[12,14,30]],[0.16,[26,40,120]],[0.4,[34,110,200]],[0.6,[28,180,190]],[0.78,[110,224,120]],[1,[242,236,90]]];
+    for (let i = 0; i < s.length - 1; i++) {
+      const [a, ca] = s[i], [b, cb] = s[i + 1];
+      if (t <= b) { const f = (t - a) / (b - a || 1); return 'rgb(' + ca.map((c, j) => Math.round(c + (cb[j] - c) * f)).join(',') + ')'; }
+    }
+    return 'rgb(242,236,90)';
+  }
+  fmtTime(ts) {
+    if (!ts) return '—';
+    const d = new Date(ts), mo = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+    const p = n => String(n).padStart(2, '0');
+    return mo[d.getUTCMonth()] + ' ' + p(d.getUTCDate()) + ' · ' + p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()) + ':' + p(d.getUTCSeconds());
+  }
+  fmtClock(ts) { if (!ts) return '—'; const d = new Date(ts), p = n => String(n).padStart(2, '0'); return p(d.getUTCHours()) + ':' + p(d.getUTCMinutes()); }
+
+  segPos(s, thr) { return s.p !== 'bg' && s.mp >= thr; }
+  outcome(w, thr) { const mine = w.segs.some(s => this.segPos(s, thr)); return w.expDet ? (mine ? 'TP' : 'FN') : (mine ? 'FP' : 'TN'); }
+
+  // filters for review list / browse
+  passFilters(w, thr) {
+    const oc = this.outcome(w, thr);
+    if (!this.state.outcomes[oc]) return false;
+    if (this.state.specOnly && !w.spec) return false;
+    const sp = this.state.speciesFilter;
+    if (sp !== 'all') {
+      const mineHas = w.segs.some(s => this.segPos(s, thr) && s.t.some(([c, p]) => c === sp && p >= 0.05));
+      const expHas = (w.expFlags && w.expFlags[sp] != null) || (w.expDet && (sp === 'Tt' && w.expSp === 'Tt'));
+      const side = this.state.side;
+      if (side === 'mine' && !mineHas) return false;
+      if (side === 'expert' && !expHas) return false;
+      if (side === 'either' && !(mineHas || expHas)) return false;
+    }
+    return true;
+  }
+
+  setMark(wav, off, v) {
+    const key = this.state.datasetId + '|' + wav + '|' + off;
+    const marks = { ...this.state.marks };
+    if (v == null) delete marks[key]; else marks[key] = v;
+    this.setState({ marks });
+    try { localStorage.setItem('cetdet_marks', JSON.stringify(marks)); } catch (e) {}
+  }
+
+  renderVals() {
+    const S = this.state, thr = S.threshold;
+    const emptyDensity = { mineRows: [], expertRows: [], ribbon: [], axis: [], expertNote: '' };
+    const emptyBands = { lanes: [], axis: [], legend: [], unitLabel: '' };
+    const emptyMatrix = { cells: [], metrics: [], speciesBars: [], note: '' };
+    const emptyReview = { list: [], hasSel: false, empty: true, listLabel: 'FILES', listCount: '0 / 0' };
+    if (S.loading || !S.data) {
+      return { loading: true, isOverview: false, isReview: false, isDensity: false, isBands: false, isMatrix: false,
+        datasetTabs: [], viewTabs: [], outcomeChips: [], speciesOptions: [], sideOptions: [], threshold: thr, thresholdLabel: thr.toFixed(2),
+        speciesFilter: 'all', specOnlyStyle: {}, specDotStyle: {}, onSpecies: () => {}, onThreshold: () => {}, onToggleSpec: () => {},
+        kpis: [], overviewTabs: [], overviewHint: '', density: emptyDensity, bands: emptyBands, matrix: emptyMatrix, review: emptyReview };
+    }
+    const ds = S.data.datasets[S.datasetId];
+    const wavs = ds.wavs;
+    const unitLabel = ds.expertGranularity === 60 ? 'minute' : '5-min interval';
+
+    // ---- top bar tabs ----
+    const datasetTabs = ['ARBAS', 'HARRAPATU'].map(id => {
+      const active = id === S.datasetId;
+      const sub = id === 'ARBAS' ? '1-min · multi-sp' : '5-min · Tt only';
+      return { id, sub, onClick: () => this.setState({ datasetId: id, selWav: null, selSeg: 0 }),
+        style: { display: 'flex', flexDirection: 'column', alignItems: 'flex-start', gap: '2px', padding: '6px 13px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '12px', background: active ? 'linear-gradient(180deg,#222a37,#1a212c)' : 'transparent', color: active ? '#e8edf4' : '#7c8696', boxShadow: active ? 'inset 0 0 0 1px rgba(255,255,255,.08)' : 'none' },
+        subStyle: { fontSize: '8.5px', letterSpacing: '.08em', color: active ? '#6b94a8' : '#4b5462', fontFamily: "'IBM Plex Mono',monospace" } };
+    });
+    const viewTabs = [['overview', 'Overview'], ['review', 'Review']].map(([v, label]) => {
+      const active = v === S.view;
+      return { label, onClick: () => this.setState({ view: v }),
+        style: { padding: '7px 16px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '12.5px', fontWeight: active ? 600 : 500, background: active ? '#e8edf4' : 'transparent', color: active ? '#0a0c10' : '#9aa6b6' } };
+    });
+
+    // ---- counts for chips (full dataset at threshold) ----
+    const counts = { TP: 0, FP: 0, TN: 0, FN: 0 };
+    wavs.forEach(w => counts[this.outcome(w, thr)]++);
+    const outcomeChips = ['TP', 'FP', 'FN', 'TN'].map(code => {
+      const active = S.outcomes[code];
+      return { code, count: counts[code], color: this.OC[code], title: this.OCNAME[code],
+        onClick: () => this.setState({ outcomes: { ...S.outcomes, [code]: !S.outcomes[code] } }),
+        style: { display: 'flex', alignItems: 'center', gap: '6px', padding: '5px 10px', borderRadius: '7px', cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontSize: '11px', fontWeight: 600, border: '1px solid ' + (active ? 'rgba(255,255,255,.14)' : 'rgba(255,255,255,.05)'), background: active ? 'rgba(255,255,255,.04)' : 'transparent', color: active ? '#cdd6e2' : '#56606e', opacity: active ? 1 : .55 },
+        countStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: '10px', color: active ? this.OC[code] : '#56606e', fontWeight: 600 } };
+    });
+
+    // species options
+    const speciesOptions = [{ value: 'all', label: 'All species' }].concat(this.SPORDER.map(c => ({ value: c, label: c + ' · ' + this.SPNAME[c] })));
+    const onSpecies = e => this.setState({ speciesFilter: e.target.value });
+    const sideOptions = [['mine', 'Mine'], ['expert', 'Expert'], ['either', 'Either']].map(([v, label]) => {
+      const active = v === S.side;
+      return { label, onClick: () => this.setState({ side: v }),
+        style: { padding: '5px 10px', borderRadius: '6px', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Mono',monospace", fontSize: '10.5px', background: active ? (v === 'mine' ? 'rgba(63,210,230,.16)' : v === 'expert' ? 'rgba(182,155,255,.16)' : 'rgba(255,255,255,.08)') : 'transparent', color: active ? (v === 'mine' ? '#7fe3f0' : v === 'expert' ? '#cbb8ff' : '#cdd6e2') : '#6b7484' } };
+    });
+    const onToggleSpec = () => this.setState({ specOnly: !S.specOnly });
+    const specOnlyStyle = { display: 'flex', alignItems: 'center', gap: '7px', padding: '6px 11px', borderRadius: '7px', cursor: 'pointer', flex: '0 0 auto', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '11.5px', border: '1px solid ' + (S.specOnly ? 'rgba(63,210,230,.3)' : 'rgba(255,255,255,.08)'), background: S.specOnly ? 'rgba(63,210,230,.08)' : 'transparent', color: S.specOnly ? '#cdd6e2' : '#7c8696' };
+    const specDotStyle = { width: '13px', height: '13px', borderRadius: '4px', flex: '0 0 auto', border: '1.5px solid ' + (S.specOnly ? '#3fd2e6' : '#3a414e'), background: S.specOnly ? '#3fd2e6' : 'transparent', boxShadow: S.specOnly ? '0 0 7px rgba(63,210,230,.5)' : 'none' };
+
+    const onThreshold = e => this.setState({ threshold: parseFloat(e.target.value) });
+
+    // ---- KPIs ----
+    const total = wavs.length;
+    const prec = counts.TP + counts.FP ? counts.TP / (counts.TP + counts.FP) : 0;
+    const rec = counts.TP + counts.FN ? counts.TP / (counts.TP + counts.FN) : 0;
+    const f1 = prec + rec ? 2 * prec * rec / (prec + rec) : 0;
+    const agree = (counts.TP + counts.TN) / total;
+    const mkKpi = (label, value, unit, color, frac) => ({ label, value, unit, cardStyle: { background: '#0e1116', border: '1px solid rgba(255,255,255,.07)', borderRadius: '13px', padding: '14px 16px' },
+      valueStyle: { fontSize: '26px', fontWeight: 600, fontFamily: "'IBM Plex Mono',monospace", color }, barTrackStyle: { height: '4px', borderRadius: '3px', background: '#1a1f29', marginTop: '11px', overflow: 'hidden' }, barFillStyle: { height: '100%', width: Math.round(frac * 100) + '%', background: color, borderRadius: '3px' } });
+    const kpis = [
+      mkKpi('UNITS', String(total), unitLabel === 'minute' ? 'min' : 'intervals', '#e8edf4', 1),
+      mkKpi('PRECISION', (prec * 100).toFixed(1), '%', '#43e08f', prec),
+      mkKpi('RECALL', (rec * 100).toFixed(1), '%', '#3fd2e6', rec),
+      mkKpi('F1', f1.toFixed(2), '', '#b69bff', f1),
+      mkKpi('AGREEMENT', (agree * 100).toFixed(1), '%', '#f2b03c', agree),
+      mkKpi('EXPERT +', String(counts.TP + counts.FN), 'units', '#c6b6ff', total ? (counts.TP + counts.FN) / total : 0)
+    ];
+
+    const overviewTabs = [['density', 'Density heatmap'], ['bands', 'Agreement bands'], ['matrix', 'Confusion & metrics']].map(([m, label]) => {
+      const active = m === S.overviewMode;
+      return { label, onClick: () => this.setState({ overviewMode: m }),
+        style: { padding: '7px 15px', borderRadius: '7px', border: 'none', cursor: 'pointer', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '12px', fontWeight: active ? 600 : 500, background: active ? 'linear-gradient(180deg,#222a37,#1a212c)' : 'transparent', color: active ? '#e8edf4' : '#7c8696', boxShadow: active ? 'inset 0 0 0 1px rgba(255,255,255,.08)' : 'none' } };
+    });
+    const overviewHint = S.overviewMode === 'density' ? 'Spectral intensity = my model confidence per species, 5-second resolution.' : S.overviewMode === 'bands' ? 'Where my detections and the expert agree or conflict, across the deployment.' : 'Aggregate agreement at the ' + unitLabel + ' level — adjust the threshold to trade precision against recall.';
+
+    const goReview = (wav) => () => this.setState({ view: 'review', selWav: wav, selSeg: 0 });
+
+    // ---- DENSITY ----
+    let density = { mineRows: [], expertRows: [], ribbon: [], axis: [], expertNote: '' };
+    {
+      // mine species present
+      const mineSp = this.SPORDER.filter(c => wavs.some(w => w.segs.some(s => this.segPos(s, thr) && s.t.some(([cc, p]) => cc === c && p >= 0.05))));
+      density.mineRows = mineSp.map(code => ({
+        name: code + ' · ' + this.SPNAME[code],
+        cells: wavs.map(w => {
+          let inten = 0;
+          w.segs.forEach(s => { if (this.segPos(s, thr)) { const e = s.t.find(([cc]) => cc === code); if (e && e[1] > inten) inten = e[1]; } });
+          const on = inten >= 0.05;
+          return { onClick: goReview(w.wav), title: w.wav + ' · ' + this.SPNAME[code] + ' · ' + (inten > 0 ? (inten * 100).toFixed(0) + '%' : '—'),
+            style: { flex: '1 1 0', minWidth: '2px', borderRadius: '2px', cursor: 'pointer', background: on ? this.cmap(inten) : '#11151b', boxShadow: inten >= 0.7 ? '0 0 6px ' + this.cmap(inten) : 'none' } };
+        })
+      }));
+      // expert
+      const expSp = S.datasetId === 'HARRAPATU' ? ['Tt'] : Array.from(new Set(wavs.flatMap(w => Object.keys(w.expFlags || {})))).sort((a, b) => (this.SPORDER.indexOf(a) + 99) - (this.SPORDER.indexOf(b) + 99));
+      density.expertRows = (expSp.length ? expSp : ['Tt']).map(code => ({
+        name: code + ' · ' + (this.SPNAME[code] || code),
+        cells: wavs.map(w => {
+          let inten = 0;
+          if (S.datasetId === 'HARRAPATU') inten = w.expDet ? 1 : 0;
+          else inten = w.expFlags && w.expFlags[code] != null ? Math.min(1, w.expFlags[code]) : 0;
+          const on = inten > 0;
+          return { onClick: goReview(w.wav), title: w.wav + ' · expert ' + (this.SPNAME[code] || code) + ' · ' + (on ? 'present' : '—'),
+            style: { flex: '1 1 0', minWidth: '2px', borderRadius: '2px', cursor: 'pointer', background: on ? 'rgba(182,155,255,' + (0.35 + inten * 0.6) + ')' : '#11151b', boxShadow: on ? '0 0 6px rgba(182,155,255,.45)' : 'none' } };
+        })
+      }));
+      density.expertNote = S.datasetId === 'HARRAPATU' ? '· Tursiops truncatus only · 5-min level' : '· multi-species · 1-min level';
+      density.ribbon = wavs.map(w => { const oc = this.outcome(w, thr); return { onClick: goReview(w.wav), title: w.wav + ' · ' + this.OCNAME[oc], style: { flex: '1 1 0', minWidth: '2px', borderRadius: '2px', cursor: 'pointer', background: this.OC[oc] } }; });
+      const n = wavs.length, idxs = [0, Math.floor(n * 0.25), Math.floor(n * 0.5), Math.floor(n * 0.75), n - 1];
+      density.axis = idxs.map(i => ({ label: this.fmtClock(wavs[i].t) }));
+    }
+
+    // ---- BANDS ----
+    let bands = { lanes: [], axis: density.axis, legend: [], unitLabel };
+    {
+      const mineLane = { label: 'MINE', color: '#3fd2e6', height: '20px', cells: wavs.map(w => {
+        let m = 0; w.segs.forEach(s => { if (this.segPos(s, thr) && s.mp > m) m = s.mp; });
+        const on = m > 0; return { onClick: goReview(w.wav), title: w.wav + ' · mine ' + (on ? (m * 100).toFixed(0) + '%' : 'none'),
+          style: { flex: '1 1 0', minWidth: '3px', borderRadius: '3px', cursor: 'pointer', background: on ? 'rgba(63,210,230,' + (0.3 + m * 0.65) + ')' : '#141821' },
+          hoverStyle: { boxShadow: '0 0 0 1px #3fd2e6' } }; }) };
+      const expLane = { label: 'EXPERT', color: '#b69bff', height: '20px', cells: wavs.map(w => {
+        const on = w.expDet; return { onClick: goReview(w.wav), title: w.wav + ' · expert ' + (on ? (w.expSp || 'detected') : 'none'),
+          style: { flex: '1 1 0', minWidth: '3px', borderRadius: '3px', cursor: 'pointer', background: on ? 'rgba(182,155,255,.85)' : '#141821' },
+          hoverStyle: { boxShadow: '0 0 0 1px #b69bff' } }; }) };
+      const ocLane = { label: 'OUTCOME', color: '#8b95a4', height: '26px', cells: wavs.map(w => { const oc = this.outcome(w, thr); return { onClick: goReview(w.wav), title: w.wav + ' · ' + this.OCNAME[oc], style: { flex: '1 1 0', minWidth: '3px', borderRadius: '3px', cursor: 'pointer', background: this.OC[oc] }, hoverStyle: { boxShadow: '0 0 0 1px #fff' } }; }) };
+      bands.lanes = [mineLane, expLane, ocLane];
+      bands.legend = ['TP', 'FP', 'FN', 'TN'].map(c => ({ label: c + ' — ' + this.OCNAME[c], color: this.OC[c] }));
+    }
+
+    // ---- MATRIX ----
+    let matrix = { cells: [], metrics: [], speciesBars: [], note: '' };
+    {
+      const cellStyle = active => ({ background: '#11151c', border: '1px solid rgba(255,255,255,.08)', borderRadius: '11px', padding: '16px', textAlign: 'left' });
+      matrix.cells = [
+        { code: 'TP', count: counts.TP, color: this.OC.TP, label: this.OCNAME.TP, style: cellStyle() },
+        { code: 'FP', count: counts.FP, color: this.OC.FP, label: this.OCNAME.FP, style: cellStyle() },
+        { code: 'FN', count: counts.FN, color: this.OC.FN, label: this.OCNAME.FN, style: cellStyle() },
+        { code: 'TN', count: counts.TN, color: this.OC.TN, label: this.OCNAME.TN, style: cellStyle() }
+      ];
+      matrix.note = 'At threshold ' + thr.toFixed(2) + ' · a ' + unitLabel + ' is “mine +” if any 5 s segment scores ≥ threshold.';
+      matrix.metrics = [
+        { label: 'PRECISION', value: (prec * 100).toFixed(1) + '%', color: '#43e08f', pct: Math.round(prec * 100) + '%', sub: 'TP / (TP+FP)' },
+        { label: 'RECALL', value: (rec * 100).toFixed(1) + '%', color: '#3fd2e6', pct: Math.round(rec * 100) + '%', sub: 'TP / (TP+FN)' },
+        { label: 'F1 SCORE', value: f1.toFixed(2), color: '#b69bff', pct: Math.round(f1 * 100) + '%', sub: 'harmonic mean' }
+      ];
+      // species bars: count of positive segments per species
+      const segCounts = {};
+      this.SPORDER.forEach(c => segCounts[c] = 0);
+      wavs.forEach(w => w.segs.forEach(s => { if (this.segPos(s, thr)) { const top = s.t[0]; if (top && top[0] && segCounts[top[0]] != null) segCounts[top[0]]++; } }));
+      const maxc = Math.max(1, ...Object.values(segCounts));
+      matrix.speciesBars = this.SPORDER.filter(c => segCounts[c] > 0).sort((a, b) => segCounts[b] - segCounts[a]).map(c => ({ name: c + ' · ' + this.SPNAME[c], count: segCounts[c], fillStyle: { height: '100%', width: Math.round(segCounts[c] / maxc * 100) + '%', background: 'linear-gradient(90deg,#1f6fa8,#3fd2e6)', borderRadius: '4px' } }));
+    }
+
+    // ---- REVIEW ----
+    const filtered = wavs.filter(w => this.passFilters(w, thr));
+    let selWav = S.selWav;
+    if (!selWav || !filtered.some(w => w.wav === selWav)) selWav = filtered.length ? filtered[0].wav : null;
+
+    const review = { listLabel: (unitLabel === 'minute' ? 'MINUTES' : 'INTERVALS'), listCount: filtered.length + ' / ' + wavs.length, list: [], hasSel: false, empty: !filtered.length };
+    review.list = filtered.map(w => {
+      const oc = this.outcome(w, thr);
+      const active = w.wav === selWav;
+      const minePos = w.segs.filter(s => this.segPos(s, thr)).length;
+      return { onClick: () => this.setState({ view: 'review', selWav: w.wav, selSeg: 0 }), time: this.fmtClock(w.t),
+        outcome: oc, minePos: minePos + '/' + w.segs.length,
+        expLabel: w.expDet ? (w.expSp || 'Tt') : '—', expStyle: { color: w.expDet ? '#c6b6ff' : '#5d6878', fontFamily: "'IBM Plex Mono',monospace" },
+        specIcon: w.spec ? '◆' : '◇',
+        specTitle: w.spec ? (w.segs.filter(s=>s.specPath).length + '/' + w.segs.length + ' segments have spectrograms') : 'No spectrograms yet',
+        specStyle: { fontSize: '10px', color: w.spec ? '#3fd2e6' : '#454e5c' },
+        chipStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: '9.5px', fontWeight: 600, padding: '2px 6px', borderRadius: '4px', color: '#0a0c10', background: this.OC[oc] },
+        style: { padding: '10px 11px', borderRadius: '10px', cursor: 'pointer', marginBottom: '5px', border: '1px solid ' + (active ? 'rgba(63,210,230,.4)' : 'rgba(255,255,255,.05)'), background: active ? 'rgba(63,210,230,.07)' : 'rgba(255,255,255,.015)' },
+        mini: w.segs.map(s => { const pos = this.segPos(s, thr); return { style: { flex: '1 1 0', background: pos ? this.cmap(s.mp) : '#1a1f29' } }; }) };
+    });
+
+    if (selWav) {
+      const w = wavs.find(x => x.wav === selWav);
+      const oc = this.outcome(w, thr);
+      const dur = w.dur, nseg = w.segs.length;
+      let selSeg = Math.min(S.selSeg, nseg - 1); if (selSeg < 0) selSeg = 0;
+      const seg = w.segs[selSeg];
+      const segStart = seg.o, segEnd = seg.o + 5;
+      const markKey = S.datasetId + '|' + w.wav + '|' + seg.o;
+      const mark = S.marks[markKey] || null;
+
+      // track
+      const track = w.segs.map((s, i) => {
+        const pos = this.segPos(s, thr), sel = i === selSeg;
+        return { onClick: () => this.setState({ selSeg: i }), title: s.o + '–' + (s.o + 5) + 's · ' + (pos ? s.p + ' ' + (s.mp * 100).toFixed(0) + '%' : 'background'),
+          style: { flex: '1 1 0', minWidth: '4px', borderRadius: '3px', cursor: 'pointer', background: pos ? this.cmap(s.mp) : '#171b22', outline: sel ? '2px solid #e8edf4' : 'none', outlineOffset: '1px', opacity: pos ? 1 : .8 },
+          hoverStyle: { outline: '2px solid rgba(255,255,255,.4)', outlineOffset: '1px' } };
+      });
+      const axis = [0, 0.25, 0.5, 0.75, 1].map(f => ({ label: Math.round(dur * f) + 's' }));
+
+      // top4 bars
+      const top4 = seg.t.map((entry, i) => {
+        const [code, p] = entry; const isTop = i === 0;
+        const col = code === 'bg' ? '#5a6573' : isTop ? '#3fd2e6' : '#7fb0c0';
+        return { code, name: this.SPNAME[code] || code, pct: (p * 100).toFixed(1) + '%',
+          valueColor: isTop ? '#3fd2e6' : '#9aa6b6',
+          codeStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: '10px', fontWeight: 600, padding: '2px 7px', borderRadius: '5px', color: isTop ? '#0a0c10' : '#9fd9e6', background: isTop ? '#3fd2e6' : 'rgba(63,210,230,.12)' },
+          barStyle: { height: '100%', width: Math.max(1.5, p * 100) + '%', background: isTop ? 'linear-gradient(90deg,#2a96b4,#3fd2e6)' : 'rgba(127,176,192,.5)', borderRadius: '5px', boxShadow: isTop && p > 0.5 ? '0 0 8px rgba(63,210,230,.4)' : 'none' } };
+      });
+
+      // expert side
+      let expTitle, expDetail, expColor, expChips = [];
+      if (w.expDet) {
+        expColor = '#c6b6ff';
+        if (S.datasetId === 'HARRAPATU') { expTitle = 'Tursiops truncatus'; expDetail = w.box ? 'Delimited at millisecond level for this interval.' : 'Detected at 5-min level (no fine delimitation).'; }
+        else { expTitle = (this.SPNAME[w.expSp] || w.expSp); expDetail = 'Annotated at the 1-minute level.'; expChips = Object.entries(w.expFlags || {}).map(([c, v]) => ({ label: c + ' ' + v })); }
+      } else { expColor = '#5d6878'; expTitle = 'No detection'; expDetail = S.datasetId === 'HARRAPATU' ? 'Expert reports no Tursiops in this interval.' : 'No cetacean annotated in this minute.'; }
+
+      // box on spectrogram (HARRAPATU ms-delimited)
+      const hasBox = !!w.box;
+      let box = null;
+      if (hasBox) {
+        const l = w.box.start / dur * 100, wd = Math.max(1.5, (w.box.end - w.box.start) / dur * 100);
+        box = { title: 'Expert delimited ' + w.box.start.toFixed(2) + '–' + w.box.end.toFixed(2) + 's', style: { position: 'absolute', top: '0', bottom: '0', left: l + '%', width: wd + '%', background: 'rgba(182,155,255,.16)', borderLeft: '2px solid #b69bff', borderRight: '2px solid #b69bff', boxShadow: '0 0 14px rgba(182,155,255,.4)' } };
+      }
+      const selMarkerStyle = { position: 'absolute', top: '0', bottom: '0', left: (segStart / dur * 100) + '%', width: Math.max(1, 5 / dur * 100) + '%', background: 'rgba(255,255,255,.12)', borderLeft: '1.5px solid rgba(255,255,255,.7)', borderRight: '1.5px solid rgba(255,255,255,.7)' };
+
+      const mkMarkBtn = (active, color) => ({ flex: 1, padding: '9px', borderRadius: '8px', cursor: 'pointer', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '12px', fontWeight: 600, border: '1px solid ' + (active ? color : 'rgba(255,255,255,.1)'), background: active ? color : 'transparent', color: active ? '#0a0c10' : '#9aa6b6' });
+
+      review.hasSel = true;
+      review.sel = {
+        wav: w.wav, subtitle: this.fmtTime(w.t) + '  ·  ' + (dur === 60 ? '1-minute file' : '5-minute file') + '  ·  ' + nseg + ' segments',
+        outcomeText: this.OCNAME[oc], outcomeChipStyle: { fontFamily: "'IBM Plex Mono',monospace", fontSize: '11px', fontWeight: 600, padding: '6px 13px', borderRadius: '8px', color: '#0a0c10', background: this.OC[oc] },
+        // per-segment spectrogram: use selected segment's path, fall back to demo image
+        hasSpec: !!(seg.specPath || w.spec),
+        noSpec: !(seg.specPath || w.spec),
+        specBgStyle: (() => {
+          const src = seg.specPath || (w.spec ? 'assets/spectrogram_sample.png' : null);
+          return { width: '100%', height: '150px', backgroundImage: src ? 'url(' + src + ')' : 'none', backgroundSize: '100% 100%', backgroundRepeat: 'no-repeat', imageRendering: 'auto' };
+        })(),
+        specMeta: (seg.specPath || w.spec) ? '· 5 s segment · cet-l20 colormap' + (seg.specPath ? '' : ' · demo image') : '',
+        hasBox, box, selMarkerStyle, track, axis,
+        expTitle, expDetail, expColor, expChips, expGranLabel: S.datasetId === 'HARRAPATU' ? '5-MIN / MS' : '1-MIN',
+        seg: {
+          tWindow: segStart + 's – ' + segEnd + 's', top4,
+          onTP: () => this.setMark(w.wav, seg.o, mark === 'TP' ? null : 'TP'),
+          onFP: () => this.setMark(w.wav, seg.o, mark === 'FP' ? null : 'FP'),
+          onClear: () => this.setMark(w.wav, seg.o, null),
+          tpStyle: mkMarkBtn(mark === 'TP', '#43e08f'), fpStyle: mkMarkBtn(mark === 'FP', '#f2b03c'),
+          clearStyle: { width: '100%', marginTop: '8px', padding: '7px', borderRadius: '8px', cursor: 'pointer', fontFamily: "'IBM Plex Sans',sans-serif", fontSize: '11px', border: '1px solid rgba(255,255,255,.07)', background: 'transparent', color: mark ? '#7c8696' : '#3a414e' },
+          autoOutcome: this.segPos(seg, thr) ? (w.expDet ? 'TP' : 'FP') : (w.expDet ? 'FN' : 'TN'),
+          autoChipStyle: (() => { const ao = this.segPos(seg, thr) ? (w.expDet ? 'TP' : 'FP') : (w.expDet ? 'FN' : 'TN'); return { fontFamily: "'IBM Plex Mono',monospace", fontSize: '10px', fontWeight: 600, padding: '2px 8px', borderRadius: '5px', color: '#0a0c10', background: this.OC[ao] }; })()
+        }
+      };
+    }
+
+    return {
+      loading: false, isOverview: S.view === 'overview', isReview: S.view === 'review',
+      isDensity: S.overviewMode === 'density', isBands: S.overviewMode === 'bands', isMatrix: S.overviewMode === 'matrix',
+      datasetTabs, viewTabs, outcomeChips, speciesOptions, sideOptions, onSpecies, onToggleSpec, onThreshold,
+      speciesFilter: S.speciesFilter, specOnlyStyle, specDotStyle, threshold: thr, thresholdLabel: thr.toFixed(2),
+      kpis, overviewTabs, overviewHint, density, bands, matrix, review
+    };
+  }
+}
+</script>
+</body>
+</html>

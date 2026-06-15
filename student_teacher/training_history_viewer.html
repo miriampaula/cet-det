@@ -1,0 +1,249 @@
+
+<style>
+.upload-area { border: 0.5px dashed var(--color-border-secondary); border-radius: var(--border-radius-lg); padding: 2rem; text-align: center; cursor: pointer; transition: background 0.15s; }
+.upload-area:hover { background: var(--color-background-secondary); }
+.phase-badge { display: inline-block; font-size: 11px; padding: 2px 8px; border-radius: var(--border-radius-md); margin-left: 6px; }
+.legend-item { display: flex; align-items: center; gap: 6px; font-size: 12px; color: var(--color-text-secondary); }
+.legend-swatch { width: 24px; height: 3px; border-radius: 2px; flex-shrink: 0; }
+.legend-swatch.dashed { background: repeating-linear-gradient(90deg, currentColor 0, currentColor 4px, transparent 4px, transparent 8px); height: 2px; }
+</style>
+
+<h2 class="sr-only">Training history chart — upload history.json to visualise loss, F1, and learning curves</h2>
+
+<div id="upload-section" style="padding: 1.5rem 0 0;">
+  <div class="upload-area" id="drop-zone" onclick="document.getElementById('file-input').click()">
+    <i class="ti ti-upload" style="font-size: 28px; color: var(--color-text-tertiary);" aria-hidden="true"></i>
+    <p style="margin: 0.5rem 0 0; font-size: 14px; color: var(--color-text-secondary);">Drop <code>history.json</code> here or click to browse</p>
+  </div>
+  <input type="file" id="file-input" accept=".json" style="display:none">
+</div>
+
+<div id="charts-section" style="display:none; padding-top: 1rem;">
+  <div style="display: flex; flex-wrap: wrap; gap: 8px; margin-bottom: 1rem; align-items: center;">
+    <span id="best-badge" style="font-size: 13px; color: var(--color-text-secondary);"></span>
+  </div>
+
+  <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-bottom: 1.5rem;">
+    <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1.25rem; flex: 1; min-width: 130px;">
+      <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">best val F1</p>
+      <p style="margin: 0; font-size: 22px; font-weight: 500;" id="card-best-f1">—</p>
+    </div>
+    <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1.25rem; flex: 1; min-width: 130px;">
+      <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">best epoch</p>
+      <p style="margin: 0; font-size: 22px; font-weight: 500;" id="card-best-epoch">—</p>
+    </div>
+    <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1.25rem; flex: 1; min-width: 130px;">
+      <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">test F1</p>
+      <p style="margin: 0; font-size: 22px; font-weight: 500;" id="card-test-f1">—</p>
+    </div>
+    <div style="background: var(--color-background-secondary); border-radius: var(--border-radius-md); padding: 0.75rem 1.25rem; flex: 1; min-width: 130px;">
+      <p style="margin: 0; font-size: 12px; color: var(--color-text-secondary);">epochs run</p>
+      <p style="margin: 0; font-size: 22px; font-weight: 500;" id="card-epochs">—</p>
+    </div>
+  </div>
+
+  <div style="display: flex; gap: 16px; flex-wrap: wrap; margin-bottom: 12px;">
+    <div class="legend-item"><span class="legend-swatch" style="background: #378ADD;"></span> val F1</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: #1D9E75;"></span> train acc</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: #D85A30;"></span> train loss</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: #BA7517;"></span> distil loss</div>
+    <div class="legend-item"><span class="legend-swatch" style="background: #888780; border-top: 2px dashed #888780; height: 0;"></span>&nbsp;domain loss</div>
+  </div>
+
+  <div style="position: relative; width: 100%; height: 320px;">
+    <canvas id="main-chart" role="img" aria-label="Training history line chart showing val F1, train accuracy, and loss curves across epochs"></canvas>
+  </div>
+
+  <p style="font-size: 11px; color: var(--color-text-tertiary); margin-top: 0.5rem;">
+    Shaded bands: <span style="background: rgba(55,138,221,0.08); padding: 1px 6px; border-radius: 3px;">P1</span>
+    <span style="background: rgba(29,158,117,0.08); padding: 1px 6px; border-radius: 3px;">P2</span>
+    <span style="background: rgba(186,117,23,0.08); padding: 1px 6px; border-radius: 3px;">P3</span>
+  </p>
+</div>
+
+<script src="https://cdnjs.cloudflare.com/ajax/libs/Chart.js/4.4.1/chart.umd.js"></script>
+<script>
+const PHASE1 = 10, PHASE2 = 30, PHASE3 = 20;
+
+function phaseBackground(ctx, chartArea, n) {
+  const {left, right, top, bottom} = chartArea;
+  const w = right - left;
+  const perEpoch = w / (n - 1);
+  return [
+    { from: 0,        to: PHASE1,            color: 'rgba(55,138,221,0.06)' },
+    { from: PHASE1,   to: PHASE1+PHASE2,     color: 'rgba(29,158,117,0.06)' },
+    { from: PHASE1+PHASE2, to: n,            color: 'rgba(186,117,23,0.06)' },
+  ];
+}
+
+const phasePlugin = {
+  id: 'phaseShading',
+  beforeDraw(chart) {
+    const {ctx, chartArea, data} = chart;
+    if (!chartArea) return;
+    const n = data.labels.length;
+    if (n < 2) return;
+    const {left, top, bottom} = chartArea;
+    const w = chartArea.right - chartArea.left;
+    const perEpoch = w / (n - 1);
+    const bands = [
+      { from: 0,             to: Math.min(PHASE1, n),              color: 'rgba(55,138,221,0.07)' },
+      { from: PHASE1,        to: Math.min(PHASE1+PHASE2, n),       color: 'rgba(29,158,117,0.07)' },
+      { from: PHASE1+PHASE2, to: n,                                 color: 'rgba(186,117,23,0.07)' },
+    ];
+    bands.forEach(({from, to, color}) => {
+      if (to <= from) return;
+      ctx.fillStyle = color;
+      const x1 = left + from * perEpoch;
+      const x2 = left + (to - 1) * perEpoch;
+      ctx.fillRect(x1, top, x2 - x1, bottom - top);
+    });
+  }
+};
+
+function renderChart(history, cfg) {
+  const n = history.val_macro_f1.length;
+  const labels = Array.from({length: n}, (_, i) => i + 1);
+
+  document.getElementById('card-best-f1').textContent = cfg.best_val_macro_f1.toFixed(4);
+  document.getElementById('card-best-epoch').textContent = cfg.best_epoch;
+  document.getElementById('card-test-f1').textContent = cfg.test_macro_f1 != null ? cfg.test_macro_f1.toFixed(4) : '—';
+  document.getElementById('card-epochs').textContent = cfg.n_epochs_run ?? n;
+
+  const canvas = document.getElementById('main-chart');
+  if (window._mainChart) window._mainChart.destroy();
+
+  window._mainChart = new Chart(canvas, {
+    type: 'line',
+    plugins: [phasePlugin],
+    data: {
+      labels,
+      datasets: [
+        {
+          label: 'val F1',
+          data: history.val_macro_f1,
+          borderColor: '#378ADD',
+          backgroundColor: 'transparent',
+          borderWidth: 2,
+          pointRadius: n > 40 ? 0 : 3,
+          tension: 0.3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'train acc',
+          data: history.train_acc,
+          borderColor: '#1D9E75',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          yAxisID: 'y',
+        },
+        {
+          label: 'train loss',
+          data: history.train_loss,
+          borderColor: '#D85A30',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          borderDash: [],
+          yAxisID: 'y2',
+        },
+        {
+          label: 'distil loss',
+          data: history.distil_loss,
+          borderColor: '#BA7517',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          tension: 0.3,
+          yAxisID: 'y2',
+        },
+        {
+          label: 'domain loss',
+          data: history.domain_loss,
+          borderColor: '#888780',
+          backgroundColor: 'transparent',
+          borderWidth: 1.5,
+          pointRadius: 0,
+          borderDash: [4, 3],
+          tension: 0.3,
+          yAxisID: 'y2',
+        },
+      ]
+    },
+    options: {
+      responsive: true,
+      maintainAspectRatio: false,
+      interaction: { mode: 'index', intersect: false },
+      plugins: {
+        legend: { display: false },
+        tooltip: {
+          callbacks: {
+            title: (items) => {
+              const ep = items[0].label;
+              const phase = ep <= PHASE1 ? 'P1' : ep <= PHASE1+PHASE2 ? 'P2' : 'P3';
+              return `Epoch ${ep} [${phase}]`;
+            },
+            label: (item) => ` ${item.dataset.label}: ${item.parsed.y.toFixed(4)}`
+          }
+        }
+      },
+      scales: {
+        x: {
+          ticks: { color: '#888780', font: { size: 11 }, maxTicksLimit: 15, autoSkip: true },
+          grid: { color: 'rgba(136,135,128,0.12)' },
+          title: { display: true, text: 'epoch', color: '#888780', font: { size: 11 } }
+        },
+        y: {
+          position: 'left',
+          min: 0, max: 1,
+          ticks: { color: '#378ADD', font: { size: 11 }, callback: v => v.toFixed(2) },
+          grid: { color: 'rgba(55,138,221,0.1)' },
+          title: { display: true, text: 'F1 / acc', color: '#378ADD', font: { size: 11 } }
+        },
+        y2: {
+          position: 'right',
+          min: 0,
+          ticks: { color: '#D85A30', font: { size: 11 }, callback: v => v.toFixed(3) },
+          grid: { drawOnChartArea: false },
+          title: { display: true, text: 'loss', color: '#D85A30', font: { size: 11 } }
+        }
+      }
+    }
+  });
+
+  document.getElementById('upload-section').style.display = 'none';
+  document.getElementById('charts-section').style.display = 'block';
+}
+
+function loadJSON(text) {
+  try {
+    const cfg = JSON.parse(text);
+    const h = cfg.history;
+    if (!h || !h.val_macro_f1) { alert('Could not find history.val_macro_f1 in this file.'); return; }
+    renderChart(h, cfg);
+  } catch(e) {
+    alert('Invalid JSON: ' + e.message);
+  }
+}
+
+document.getElementById('file-input').addEventListener('change', e => {
+  const f = e.target.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => loadJSON(ev.target.result);
+  r.readAsText(f);
+});
+
+const dz = document.getElementById('drop-zone');
+dz.addEventListener('dragover', e => { e.preventDefault(); dz.style.background = 'var(--color-background-secondary)'; });
+dz.addEventListener('dragleave', () => { dz.style.background = ''; });
+dz.addEventListener('drop', e => {
+  e.preventDefault(); dz.style.background = '';
+  const f = e.dataTransfer.files[0]; if (!f) return;
+  const r = new FileReader();
+  r.onload = ev => loadJSON(ev.target.result);
+  r.readAsText(f);
+});
+</script>
