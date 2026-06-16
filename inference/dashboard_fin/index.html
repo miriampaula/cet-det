@@ -91,6 +91,14 @@ button{cursor:pointer;border:none;font-family:inherit;}
         <span class="sec-label">MINUTES</span>
         <span id="rail-count" style="font-size:11px;color:#5d6878;font-family:'IBM Plex Mono',monospace;"></span>
       </div>
+      <div id="rail-search" style="padding:10px 13px;border-bottom:1px solid rgba(255,255,255,.06);">
+        <div style="display:flex;gap:6px;">
+          <input id="rail-dt" type="datetime-local" style="flex:1;min-width:0;background:#161a22;color:#cdd6e2;border:1px solid rgba(255,255,255,.1);border-radius:7px;padding:6px 8px;font-size:11px;font-family:'IBM Plex Mono',monospace;color-scheme:dark;">
+          <button id="rail-go" style="padding:6px 13px;border-radius:7px;border:1px solid rgba(63,210,230,.3);background:rgba(63,210,230,.12);color:#7fe3f0;font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:600;cursor:pointer;">Go</button>
+        </div>
+        <div id="rail-search-err" style="display:none;margin-top:7px;font-size:10.5px;color:#f0604f;font-family:'IBM Plex Mono',monospace;"></div>
+      </div>
+      <div id="rail-pager" style="display:none;align-items:center;justify-content:space-between;gap:8px;padding:8px 13px;border-bottom:1px solid rgba(255,255,255,.06);"></div>
       <div id="rail-list" style="flex:1;overflow-y:auto;padding:8px;"></div>
     </div>
     <div id="review-detail" style="flex:1;overflow-y:auto;padding:18px 22px 40px;"></div>
@@ -105,7 +113,7 @@ const OC     = { TP:'#43e08f', FP:'#f2b03c', FN:'#f0604f', TN:'#5a6573' };
 const OCNAME = { TP:'True positive', FP:'False positive', FN:'False negative', TN:'True negative' };
 const SPORDER= ['Ambig','Tt','Oo','Pm','Gg','Dd','Gm','Sc','Ba','Bp'];
 const MO     = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
-const MAXCOL = 480, RAIL_CAP = 300;
+const MAXCOL = 480, RAIL_PAGE = 100;
 const STRATS = ['argmax','vec','pr','consensus2','consensus3'];
 
 // ── state ────────────────────────────────────────────────────────────────────
@@ -115,7 +123,8 @@ const S = {
   outcomes:{TP:true,FP:true,TN:true,FN:true},
   speciesFilter:'all', side:'either',
   strategy:'argmax',
-  selWav:null, selSeg:0
+  selWav:null, selSeg:0,
+  railPage:0, _jumpWav:null, _railTop:false
 };
 
 // ── utils ────────────────────────────────────────────────────────────────────
@@ -140,6 +149,9 @@ const p2=n=>String(n).padStart(2,'0');
 function fmtTime(ts){if(!ts)return'—';const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate())+' '+d.getUTCFullYear()+' · '+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
 function fmtDate(ts){const d=new Date(ts);return MO[d.getUTCMonth()]+' '+p2(d.getUTCDate())+' '+d.getUTCFullYear();}
 function fmtHour(ts){const d=new Date(ts);return p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
+// datetime-local <input> value, formatted from UTC components so it round-trips
+// with how we parse it (no timezone shift, matching the rest of the UI).
+function toDTInput(ts){const d=new Date(ts);return d.getUTCFullYear()+'-'+p2(d.getUTCMonth()+1)+'-'+p2(d.getUTCDate())+'T'+p2(d.getUTCHours())+':'+p2(d.getUTCMinutes());}
 
 // ── authoritative per-segment accessors ──────────────────────────────────────
 // A segment is "positive (mine)" when it fired for the active strategy.
@@ -267,6 +279,7 @@ fetch('data/detections.json').then(r=>r.json()).then(data=>{
   document.getElementById('loading-screen').style.display='none';
   buildTopBar();
   buildFilterBar();
+  buildRailControls();
   showAll();
 }).catch(e=>{
   document.getElementById('loading-screen').innerHTML=`<div style="color:#f0604f;padding:20px;font-family:'IBM Plex Mono',monospace;">Failed to load: ${e.message}</div>`;
@@ -285,7 +298,7 @@ function buildTopBar(){
     b.innerHTML=`<span style="font-weight:600;letter-spacing:.05em;font-size:12px;">${id}</span><span style="font-size:8.5px;letter-spacing:.08em;color:#6b94a8;font-family:'IBM Plex Mono',monospace;display:block;margin-top:2px;">${sub}</span>`;
     b.style.cssText='display:flex;flex-direction:column;align-items:flex-start;gap:2px;padding:6px 13px;border-radius:7px;border:none;cursor:pointer;';
     b.dataset.ds=id;
-    b.addEventListener('click',()=>{S.datasetId=id;S.selWav=null;S.selSeg=0;refreshDatasetTabs();refreshOutcomeChips();showAll();});
+    b.addEventListener('click',()=>{S.datasetId=id;S.selWav=null;S.selSeg=0;S.railPage=0;hideRailErr();refreshDatasetTabs();refreshOutcomeChips();showAll();});
     dt.appendChild(b);
   });
   const vt=document.getElementById('view-tabs');
@@ -358,7 +371,11 @@ function buildFilterBar(){
 // Re-render whichever screen is active so top-bar filters affect both.
 function applyFilters(){
   if(S.view==='overview')renderOverview();
-  else renderReview();
+  else{
+    // keep the current selection on-screen after the filtered set changes
+    if(S.selWav)S._jumpWav=S.selWav;
+    renderReview();
+  }
 }
 
 function refreshOutcomeChips(){
@@ -473,7 +490,7 @@ function renderDensity(){
   const days=new Set(wavs.map(w=>{const d=new Date(w.t);return d.getUTCFullYear()+'-'+d.getUTCMonth()+'-'+d.getUTCDate();})).size;
   const span=tsAll.length?(days+(days===1?' day':' days')+' · '+fmtDate(Math.min(...tsAll))+' → '+fmtDate(Math.max(...tsAll))):'';
   const binNote=bs>1?' · '+bs+' min/col':'';
-  const goRev=wav=>{S.view='review';S.selWav=wav;S.selSeg=0;refreshViewTabs();switchScreen();};
+  const goRev=goReview;
 
   addEl(panel,'div',`display:flex;align-items:center;gap:9px;margin-bottom:4px;`,
     `<span style="width:10px;height:10px;border-radius:3px;background:#3fd2e6;box-shadow:0 0 8px rgba(63,210,230,.5);"></span>
@@ -559,7 +576,7 @@ function renderBands(){
   if(!wavs.length){addEl(panel,'div','padding:40px;text-align:center;color:#5d6878;font-family:IBM Plex Mono,monospace;font-size:12px;','NO SEGMENTS MATCH FILTERS');return;}
   const {cols}=buildCols(wavs);
   const ocOrd=['FN','FP','TP','TN'];
-  const goRev=wav=>{S.view='review';S.selWav=wav;S.selSeg=0;refreshViewTabs();switchScreen();};
+  const goRev=goReview;
 
   const lanes=[
     {label:'MINE ('+S.strategy+')',color:'#3fd2e6',h:'20px',fn:([a,b])=>{let m=0;for(let i=a;i<b;i++)wavs[i].segs.forEach(s=>{if(segPos(s)&&s.mp>m)m=s.mp;});const on=m>0;return{wav:wavs[a].wav,bg:on?'rgba(63,210,230,'+(0.3+m*0.65)+')':'#141821',title:colTime(wavs,a,b)+' · mine '+(on?(m*100).toFixed(0)+'%':'none')};}},
@@ -653,17 +670,99 @@ function renderMatrix(){
 }
 
 // ── review ────────────────────────────────────────────────────────────────────
+// Navigate to a specific wav in Review: switch screen, select it, and flag it
+// so renderReview lands on the page that contains it and scrolls it into view.
+function goReview(wav){
+  S.view='review';S.selWav=wav;S.selSeg=0;S._jumpWav=wav;
+  refreshViewTabs();switchScreen();
+}
+
+// Rail search + pager controls (wired once at boot).
+function buildRailControls(){
+  const go=document.getElementById('rail-go'),inp=document.getElementById('rail-dt');
+  go.addEventListener('click',doDateSearch);
+  inp.addEventListener('keydown',e=>{if(e.key==='Enter')doDateSearch();});
+}
+function showRailErr(m){const e=document.getElementById('rail-search-err');e.textContent=m;e.style.display='block';}
+function hideRailErr(){const e=document.getElementById('rail-search-err');e.style.display='none';}
+
+// Date + hour lookup. Finds the section nearest the chosen time *on that date*
+// within the currently filtered set, then jumps the rail to it.
+function doDateSearch(){
+  const inp=document.getElementById('rail-dt'),v=inp.value;
+  if(!v){showRailErr('Pick a date & time first.');return;}
+  const m=v.match(/^(\d{4})-(\d{2})-(\d{2})T(\d{2}):(\d{2})/);
+  if(!m){showRailErr('Could not read that date.');return;}
+  const target=Date.UTC(+m[1],+m[2]-1,+m[3],+m[4],+m[5]);
+  const td=new Date(target);
+  const wavs=getWavs().filter(passFilters);
+  if(!wavs.length){showRailErr('No sections match the current filters.');return;}
+  const sameDate=wavs.filter(w=>{const d=new Date(w.t);return d.getUTCFullYear()===td.getUTCFullYear()&&d.getUTCMonth()===td.getUTCMonth()&&d.getUTCDate()===td.getUTCDate();});
+  if(!sameDate.length){showRailErr('No recording on '+fmtDate(target)+(S.speciesFilter!=='all'||!(S.outcomes.TP&&S.outcomes.FP&&S.outcomes.TN&&S.outcomes.FN)?' (under current filters)':'')+'.');return;}
+  let best=sameDate[0],bd=Math.abs(best.t-target);
+  sameDate.forEach(w=>{const dd=Math.abs(w.t-target);if(dd<bd){bd=dd;best=w;}});
+  hideRailErr();
+  S.selWav=best.wav;S.selSeg=0;S._jumpWav=best.wav;
+  renderReview();
+}
+
+// Prev / page X of Y / Next, shown only when there's more than one page.
+function renderRailPager(pageCount){
+  const el=document.getElementById('rail-pager');
+  el.innerHTML='';
+  if(pageCount<=1){el.style.display='none';return;}
+  el.style.display='flex';
+  const mk=(label,disabled,fn)=>{
+    const b=document.createElement('button');
+    b.textContent=label;b.disabled=disabled;
+    b.style.cssText=`padding:5px 11px;border-radius:7px;border:1px solid rgba(255,255,255,.1);background:${disabled?'transparent':'#161a22'};color:${disabled?'#3a424f':'#cdd6e2'};font-family:'IBM Plex Mono',monospace;font-size:11px;cursor:${disabled?'default':'pointer'};`;
+    if(!disabled)b.addEventListener('click',fn);
+    return b;
+  };
+  const setPage=p=>{S.railPage=p;S._railTop=true;renderReview();};
+  el.appendChild(mk('‹ Prev',S.railPage<=0,()=>setPage(S.railPage-1)));
+  const mid=document.createElement('span');
+  mid.textContent=(S.railPage+1)+' / '+pageCount;
+  mid.style.cssText="font-family:'IBM Plex Mono',monospace;font-size:11px;color:#9aa6b6;";
+  el.appendChild(mid);
+  el.appendChild(mk('Next ›',S.railPage>=pageCount-1,()=>setPage(S.railPage+1)));
+}
+
 function renderReview(){
+  const listEl=document.getElementById('rail-list');
+  const prevScroll=listEl.scrollTop;
+  const jumpWav=S._jumpWav; S._jumpWav=null;
+  const railTop=S._railTop;  S._railTop=false;
+
   const wavs=getWavs(),filtered=wavs.filter(passFilters);
   let sel=S.selWav;
   if(!sel||!filtered.some(w=>w.wav===sel))sel=filtered.length?filtered[0].wav:null;
   S.selWav=sel;
-  let rail=filtered.slice(0,RAIL_CAP);
-  if(sel&&!rail.some(w=>w.wav===sel)){const sw=filtered.find(w=>w.wav===sel);if(sw)rail=[sw].concat(rail.slice(0,RAIL_CAP-1));}
-  const note=filtered.length>RAIL_CAP?' · showing '+rail.length:'';
+
+  // pagination — page that contains the jump target, otherwise current (clamped)
+  const pageCount=Math.max(1,Math.ceil(filtered.length/RAIL_PAGE));
+  if(jumpWav){
+    const gi=filtered.findIndex(w=>w.wav===jumpWav);
+    if(gi>=0)S.railPage=Math.floor(gi/RAIL_PAGE);
+  }
+  S.railPage=Math.max(0,Math.min(S.railPage,pageCount-1));
+  const start=S.railPage*RAIL_PAGE,end=Math.min(filtered.length,start+RAIL_PAGE);
+  const rail=filtered.slice(start,end);
+
+  // keep the datetime field seeded with a valid in-range value the first time
+  const inp=document.getElementById('rail-dt');
+  if(filtered.length){
+    const ts=filtered.map(w=>w.t).filter(Boolean);
+    if(ts.length){inp.min=toDTInput(Math.min(...ts));inp.max=toDTInput(Math.max(...ts));}
+    if(!inp.value){const sw=filtered.find(w=>w.wav===sel);if(sw&&sw.t)inp.value=toDTInput(sw.t);}
+  }
+
+  const note=pageCount>1?' · pg '+(S.railPage+1)+'/'+pageCount:'';
   document.getElementById('rail-count').textContent=filtered.length+' / '+wavs.length+note;
-  const listEl=document.getElementById('rail-list');
+  renderRailPager(pageCount);
+
   listEl.innerHTML='';
+  let jumpEl=null;
   rail.forEach(w=>{
     const active=w.wav===sel,oc=w._oc,mp=w.segs.filter(segPos).length;
     const item=document.createElement('div');
@@ -681,7 +780,16 @@ function renderReview(){
     </div>`;
     item.addEventListener('click',()=>{S.selWav=w.wav;S.selSeg=0;renderReview();});
     listEl.appendChild(item);
+    if(jumpWav&&w.wav===jumpWav)jumpEl=item;
   });
+
+  // scroll handling: jump-to wins, then explicit page-change to top, else preserve
+  if(jumpWav&&jumpEl){
+    const r=jumpEl.getBoundingClientRect(),lr=listEl.getBoundingClientRect();
+    listEl.scrollTop+=(r.top-lr.top)-(lr.height/2)+(r.height/2);
+  }else if(railTop){listEl.scrollTop=0;}
+  else{listEl.scrollTop=prevScroll;}
+
   if(sel){renderDetail(wavs.find(w=>w.wav===sel));}
   else{document.getElementById('review-detail').innerHTML=`<div style="display:flex;align-items:center;justify-content:center;height:80%;flex-direction:column;gap:10px;"><div style="font-family:'IBM Plex Mono',monospace;font-size:12px;color:#5d6878;letter-spacing:.12em;">NO SEGMENTS MATCH FILTERS</div><div style="font-size:11px;color:#454e5c;">Relax the outcome / species filters above</div></div>`;}
 }
