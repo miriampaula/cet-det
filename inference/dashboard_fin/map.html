@@ -1,0 +1,688 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Cetacean PAM Dataset Map</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+  @import url('https://fonts.googleapis.com/css2?family=Space+Mono:wght@400;700&family=DM+Sans:wght@300;400;500&display=swap');
+
+  :root {
+    --bg: #07090f;
+    --surface: #0e1117;
+    --surface2: #161b26;
+    --border: #1e2535;
+    --accent: #4af0c4;
+    --accent2: #f0824a;
+    --accent3: #a78bfa;
+    --text: #e2e8f0;
+    --muted: #64748b;
+    --glow: rgba(74, 240, 196, 0.15);
+  }
+
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+
+  body {
+    background: var(--bg);
+    color: var(--text);
+    font-family: 'DM Sans', sans-serif;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+
+  header {
+    padding: 14px 24px;
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    border-bottom: 1px solid var(--border);
+    background: var(--surface);
+    flex-shrink: 0;
+    z-index: 1000;
+  }
+
+  .header-left { display: flex; align-items: center; gap: 14px; }
+
+  .logo {
+    width: 32px; height: 32px;
+    background: linear-gradient(135deg, var(--accent), var(--accent3));
+    border-radius: 8px;
+    display: flex; align-items: center; justify-content: center;
+    font-size: 16px;
+  }
+
+  h1 {
+    font-family: 'Space Mono', monospace;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: var(--accent);
+  }
+
+  .subtitle {
+    font-size: 11px;
+    color: var(--muted);
+    font-family: 'Space Mono', monospace;
+  }
+
+  .stats-bar {
+    display: flex;
+    gap: 24px;
+    align-items: center;
+  }
+
+  .stat {
+    text-align: right;
+  }
+
+  .stat-value {
+    font-family: 'Space Mono', monospace;
+    font-size: 16px;
+    font-weight: 700;
+    color: var(--accent);
+    line-height: 1;
+  }
+
+  .stat-label {
+    font-size: 10px;
+    color: var(--muted);
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    margin-top: 2px;
+  }
+
+  .main {
+    display: flex;
+    flex: 1;
+    overflow: hidden;
+  }
+
+  #map {
+    flex: 1;
+    background: #07090f;
+  }
+
+  .sidebar {
+    width: 320px;
+    background: var(--surface);
+    border-left: 1px solid var(--border);
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+    flex-shrink: 0;
+  }
+
+  .sidebar-header {
+    padding: 16px 18px 12px;
+    border-bottom: 1px solid var(--border);
+    font-family: 'Space Mono', monospace;
+    font-size: 10px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+  }
+
+  .dataset-list {
+    overflow-y: auto;
+    flex: 1;
+    padding: 8px;
+  }
+
+  .dataset-list::-webkit-scrollbar { width: 4px; }
+  .dataset-list::-webkit-scrollbar-track { background: transparent; }
+  .dataset-list::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+
+  .dataset-card {
+    padding: 10px 12px;
+    border-radius: 8px;
+    margin-bottom: 4px;
+    cursor: pointer;
+    border: 1px solid transparent;
+    transition: all 0.15s ease;
+    position: relative;
+  }
+
+  .dataset-card:hover {
+    background: var(--surface2);
+    border-color: var(--border);
+  }
+
+  .dataset-card.active {
+    background: var(--surface2);
+    border-color: var(--accent);
+    box-shadow: 0 0 0 1px var(--accent) inset, 0 0 12px var(--glow);
+  }
+
+  .card-top {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    margin-bottom: 4px;
+  }
+
+  .card-name {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    color: var(--text);
+  }
+
+  .card-count {
+    font-family: 'Space Mono', monospace;
+    font-size: 11px;
+    font-weight: 700;
+    padding: 2px 7px;
+    border-radius: 4px;
+    background: rgba(74,240,196,0.1);
+    color: var(--accent);
+  }
+
+  .card-meta {
+    display: flex;
+    gap: 6px;
+    flex-wrap: wrap;
+    margin-top: 4px;
+  }
+
+  .tag {
+    font-size: 9px;
+    padding: 2px 6px;
+    border-radius: 3px;
+    font-family: 'Space Mono', monospace;
+    letter-spacing: 0.04em;
+  }
+
+  .tag-env { background: rgba(167,139,250,0.15); color: var(--accent3); }
+  .tag-type { background: rgba(240,130,74,0.15); color: var(--accent2); }
+  .tag-region { background: rgba(100,116,139,0.15); color: var(--muted); }
+
+  .card-sites {
+    font-size: 10px;
+    color: var(--muted);
+    margin-top: 5px;
+    line-height: 1.4;
+  }
+
+  /* Popup styles */
+  .leaflet-popup-content-wrapper {
+    background: var(--surface2) !important;
+    border: 1px solid var(--border) !important;
+    border-radius: 10px !important;
+    box-shadow: 0 8px 32px rgba(0,0,0,0.6) !important;
+    color: var(--text) !important;
+    font-family: 'DM Sans', sans-serif !important;
+  }
+
+  .leaflet-popup-tip {
+    background: var(--surface2) !important;
+  }
+
+  .popup-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 12px;
+    font-weight: 700;
+    color: var(--accent);
+    margin-bottom: 6px;
+  }
+
+  .popup-row {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    margin-bottom: 3px;
+    color: var(--text);
+  }
+
+  .popup-label { color: var(--muted); }
+
+  .popup-count {
+    font-family: 'Space Mono', monospace;
+    font-weight: 700;
+    color: var(--accent);
+    font-size: 14px;
+    margin-top: 6px;
+  }
+
+  /* Legend */
+  .legend {
+    padding: 12px 18px;
+    border-top: 1px solid var(--border);
+    flex-shrink: 0;
+  }
+
+  .legend-title {
+    font-family: 'Space Mono', monospace;
+    font-size: 9px;
+    letter-spacing: 0.1em;
+    text-transform: uppercase;
+    color: var(--muted);
+    margin-bottom: 8px;
+  }
+
+  .legend-items {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .legend-item {
+    display: flex;
+    align-items: center;
+    gap: 5px;
+    font-size: 10px;
+    color: var(--text);
+  }
+
+  .legend-dot {
+    width: 10px; height: 10px;
+    border-radius: 50%;
+    flex-shrink: 0;
+  }
+
+  /* Leaflet dark tiles override */
+  .leaflet-tile { filter: brightness(0.85) saturate(0.7) hue-rotate(180deg) invert(0.9) contrast(0.9); }
+</style>
+</head>
+<body>
+
+<header>
+  <div class="header-left">
+    <div class="logo">🐬</div>
+    <div>
+      <h1>Cetacean PAM · Dataset Map</h1>
+      <div class="subtitle">Passive Acoustic Monitoring · Global Recording Sites</div>
+    </div>
+  </div>
+  <div class="stats-bar">
+    <div class="stat">
+      <div class="stat-value" id="total-annotations">—</div>
+      <div class="stat-label">Total Annotations</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="total-sites">—</div>
+      <div class="stat-label">Recording Sites</div>
+    </div>
+    <div class="stat">
+      <div class="stat-value" id="total-datasets">16</div>
+      <div class="stat-label">Datasets</div>
+    </div>
+  </div>
+</header>
+
+<div class="main">
+  <div id="map"></div>
+  <div class="sidebar">
+    <div class="sidebar-header">Datasets · Click to highlight</div>
+    <div class="dataset-list" id="dataset-list"></div>
+    <div class="legend">
+      <div class="legend-title">Recording Environment</div>
+      <div class="legend-items">
+        <div class="legend-item"><div class="legend-dot" style="background:#4af0c4"></div>Open Ocean / Wild</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#f0824a"></div>Captive / Aquarium</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#a78bfa"></div>Fishing / Trawl</div>
+        <div class="legend-item"><div class="legend-dot" style="background:#facc15"></div>Mixed</div>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+window.onload = function() {
+const DATASETS = [
+  {
+    id: 'dclde_2026',
+    name: 'DCLDE 2026',
+    type: 'Bounding Boxes',
+    env: 'wild',
+    region: 'NE Pacific',
+    count: 172421,
+    sites: [
+      { name: 'CarmanahPt (DFO_WDLP)', lat: 48.60, lon: -124.75, sr: 192, depth: 55, provider: 'DFO_WDLP' },
+      { name: 'HaroStraitNorth (JASCVO)', lat: 48.52, lon: -123.19, sr: 96, depth: 251, provider: 'JASCVO_VFPA' },
+      { name: 'HaroStraitSouth (JASCVO)', lat: 48.52, lon: -123.21, sr: 96, depth: 210, provider: 'JASCVO_VFPA' },
+      { name: 'BoundaryPass (JASCVO)', lat: 48.76, lon: -123.07, sr: 128, depth: 193, provider: 'JASCVO_VFPA' },
+      { name: 'StraitofGeorgia (JASCVO/ONC)', lat: 49.04, lon: -123.32, sr: 64, depth: 168, provider: 'JASCVO_VFPA_ONC' },
+      { name: 'BerkleyCanyon (ONC)', lat: 48.43, lon: -126.17, sr: 64, depth: 40, provider: 'ONC' },
+      { name: 'Orcasound Lab', lat: 48.52, lon: -123.16, sr: 48, depth: 8, provider: 'ORCASOUND' },
+      { name: 'Bush Point', lat: 48.03, lon: -122.61, sr: 48, depth: 12.5, provider: 'ORCASOUND' },
+      { name: 'Port Townsend', lat: 48.14, lon: -122.76, sr: 48, depth: 8, provider: 'ORCASOUND' },
+      { name: 'Cape Elizabeth (SIO)', lat: 47.36, lon: -124.68, sr: 200, depth: 100, provider: 'SIO' },
+      { name: 'Quinault Canyon (SIO)', lat: 47.50, lon: -125.35, sr: 200, depth: 1400, provider: 'SIO' },
+      { name: 'Lime Kiln (SMRU)', lat: 48.51, lon: -123.15, sr: 150, depth: 23, provider: 'SMRU' },
+    ]
+  },
+  {
+    id: 'ecoss_annotated',
+    name: 'ECOSS Annotated',
+    type: 'Time Stamps',
+    env: 'wild',
+    region: 'Europe / N America',
+    count: 752,
+    sites: [
+      { name: 'Waddensea (NL)', lat: 53.2251, lon: 5.2164, sr: null, depth: -6.08, provider: 'Waddensea · NL' },
+      { name: 'WOZEP Site A (NL)', lat: 51.9095, lon: 2.7232, sr: null, depth: -44.40, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site B (NL)', lat: 51.8537, lon: 3.1548, sr: null, depth: -28.45, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site C (NL)', lat: 51.8095, lon: 3.0135, sr: null, depth: -32.55, provider: 'WOZEP · NL' },
+      { name: 'biMep / Safewave (ES)', lat: 43.4642, lon: -2.8814, sr: null, depth: -71.00, provider: 'biMep · ES' },
+      { name: 'SemRev / Safewave (FR)', lat: 47.2400, lon: -2.7800, sr: null, depth: -44.00, provider: 'SemRev · FR' },
+      { name: 'BlueForests (WAVEC)', lat: 39.33, lon: -9.37, sr: 96, depth: null, provider: 'BlueForests · PT' },
+      { name: 'Deepship', lat: 50.21, lon: -128.39, sr: null, depth: -141, provider: 'Deepship · CA' },
+      { name: 'JFB-IT (Sicily Channel)', lat: 37.5, lon: 11.5, sr: null, depth: null, provider: 'JFB-IT · IT' },
+      { name: 'MAMBO 4C 2019', lat: 48.57, lon: -6.17, sr: 39062, depth: -49, provider: 'MAMBO · FR' },
+      { name: 'SafeWAVE', lat: 41.46, lon: -8.84, sr: 576000, depth: null, provider: 'SafeWAVE · PT' },
+      { name: 'UniVigo (Minho estuary)', lat: 41.9, lon: -8.9, sr: 52734, depth: -4, provider: 'UniVigo · ES' },
+      { name: 'Waveglider-SZN (central Med)', lat: 38.0, lon: 15.0, sr: null, depth: null, provider: 'SZN · IT' },
+      { name: 'jUMP (Portugal)', lat: 38.85, lon: -8.27, sr: 192000, depth: null, provider: 'jUMP · PT' },
+      { name: 'POSA (French Riviera)', lat: 43.05, lon: 6.25, sr: 78125, depth: -15, provider: 'posa · FR' },
+    ]
+  },
+  {
+    id: 'ecoss_training',
+    name: 'ECOSS Train/Test',
+    type: 'Time Stamps',
+    env: 'wild',
+    region: 'Europe / N America',
+    count: 36044,
+    sites: [
+      { name: 'BlueForests (WAVEC)', lat: 39.33, lon: -9.37, sr: 96, depth: null, provider: 'BlueForests · PT' },
+      { name: 'Deepship', lat: 50.21, lon: -128.39, sr: null, depth: -141, provider: 'Deepship · CA' },
+      { name: 'JFB-IT (Sicily Channel)', lat: 37.5, lon: 11.5, sr: null, depth: null, provider: 'JFB-IT · IT' },
+      { name: 'MAMBO 4C 2019', lat: 48.57, lon: -6.17, sr: 39062, depth: -49, provider: 'MAMBO · FR' },
+      { name: 'SafeWAVE', lat: 41.46, lon: -8.84, sr: 576000, depth: null, provider: 'SafeWAVE · PT' },
+      { name: 'SemRev', lat: 47.24, lon: -2.78, sr: null, depth: null, provider: 'SemRev · FR' },
+      { name: 'UniVigo (Minho estuary)', lat: 41.9, lon: -8.9, sr: 52734, depth: -4, provider: 'UniVigo · ES' },
+      { name: 'WOZEP (North Sea)', lat: 51.75, lon: 3.04, sr: 48000, depth: -26, provider: 'WOZEP · NL' },
+      { name: 'Waveglider-SZN (central Med)', lat: 38.0, lon: 15.0, sr: null, depth: null, provider: 'SZN · IT' },
+      { name: 'biMep (Basque Country)', lat: 43.46, lon: -2.88, sr: 288000, depth: -61, provider: 'biMep · ES' },
+      { name: 'jUMP (Portugal)', lat: 38.85, lon: -8.27, sr: 192000, depth: null, provider: 'jUMP · PT' },
+      { name: 'POSA (French Riviera)', lat: 43.05, lon: 6.25, sr: 78125, depth: -15, provider: 'posa · FR' },
+    ]
+  },
+  {
+    id: 'ecoss_enhanced',
+    name: 'ECOSS Enhanced4AI',
+    type: 'Time Stamps',
+    env: 'wild',
+    region: 'NW Europe',
+    count: 168,
+    sites: [
+      { name: 'Waddensea (NL)', lat: 53.2251, lon: 5.2164, sr: null, depth: -6.08, provider: 'Waddensea · NL' },
+      { name: 'WOZEP Site A (NL)', lat: 51.9095, lon: 2.7232, sr: null, depth: -44.40, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site B (NL)', lat: 51.8537, lon: 3.1548, sr: null, depth: -28.45, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site C (NL)', lat: 51.8095, lon: 3.0135, sr: null, depth: -32.55, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site D (NL)', lat: 51.7075, lon: 3.2770, sr: null, depth: -16.09, provider: 'WOZEP · NL' },
+      { name: 'WOZEP Site E (NL)', lat: 51.5800, lon: 3.0469, sr: null, depth: -21.26, provider: 'WOZEP · NL' },
+      { name: 'biMep / Safewave (ES)', lat: 43.4642, lon: -2.8814, sr: null, depth: -71.00, provider: 'biMep · ES' },
+      { name: 'SemRev / Safewave (FR)', lat: 47.2400, lon: -2.7800, sr: null, depth: -44.00, provider: 'SemRev · FR' },
+    ]
+  },
+  {
+    id: 'monish',
+    name: 'MONISH',
+    type: 'Time Stamps',
+    env: 'wild',
+    region: 'Unknown (aggregated)',
+    count: 617,
+    sites: []
+  },
+  {
+    id: 'fremantle',
+    name: 'FREMANTLE',
+    type: 'Bounding Boxes',
+    env: 'wild',
+    region: 'Australia',
+    count: 332,
+    sites: [
+      { name: 'Fremantle Inner Harbour (hydrophone)', lat: -32.0420, lon: 115.7528, sr: 96, depth: 4, provider: 'Marley et al. 2017' }
+    ]
+  },
+  {
+    id: 'watkins',
+    name: 'Archived Watkins',
+    type: 'Time Stamps',
+    env: 'wild',
+    region: 'Global (multi-ocean)',
+    count: 1877,
+    sites: [
+      { name: 'N Atlantic / US East Coast', lat: 38.0, lon: -68.0, sr: 22050, depth: null, provider: 'WHOI' },
+      { name: 'Bahamas / Caribbean', lat: 24.0, lon: -77.0, sr: 22050, depth: null, provider: 'WHOI' },
+      { name: 'Mediterranean (Italy/Malta/Croatia)', lat: 38.5, lon: 15.0, sr: 22050, depth: null, provider: 'WHOI' },
+      { name: 'N Atlantic (Norway / Newfoundland)', lat: 62.0, lon: -10.0, sr: 22050, depth: null, provider: 'WHOI' },
+      { name: 'Arctic (Canada / Norway)', lat: 72.0, lon: -25.0, sr: 22050, depth: null, provider: 'WHOI' },
+      { name: 'S Atlantic (Argentina)', lat: -40.0, lon: -57.0, sr: 22050, depth: null, provider: 'WHOI' },
+    ]
+  },
+  {
+    id: 'alnitak',
+    name: 'ALNITAK Cavanilles',
+    type: 'Bounding Boxes',
+    env: 'wild',
+    region: 'W Mediterranean',
+    count: 5337,
+    sites: [
+      { name: 'Port Vendres, France', lat: 42.61, lon: 3.21, sr: 96, depth: null, provider: 'Fishing' },
+      { name: 'Sóller, Mallorca', lat: 39.98, lon: 2.59, sr: 96, depth: 1317, provider: 'Fishing FAD' },
+      { name: 'Cabrera Island', lat: 39.10, lon: 2.90, sr: null, depth: null, provider: 'Mixed' },
+      { name: 'Tarifa', lat: 35.91, lon: 5.64, sr: null, depth: 909, provider: 'Boat survey' },
+      { name: 'Columbretes Islands', lat: 39.78, lon: 0.55, sr: null, depth: null, provider: 'Boat survey' },
+      { name: 'Balearic Islands', lat: 39.44, lon: 3.39, sr: null, depth: null, provider: 'Boat survey' },
+    ]
+  },
+  {
+    id: 'dryad_imms',
+    name: 'DRYAD · IMMS',
+    type: 'Bounding Boxes',
+    env: 'captive',
+    region: 'Gulf of Mexico',
+    count: 2842,
+    sites: [
+      { name: 'IMMS Aquarium, Gulfport MS', lat: 30.37, lon: -89.07, sr: 48, depth: null, provider: 'IMMS' }
+    ]
+  },
+  {
+    id: 'dryad_of',
+    name: "DRYAD · Oceanogràfic",
+    type: 'Bounding Boxes',
+    env: 'captive',
+    region: 'Mediterranean',
+    count: 2886,
+    sites: [
+      { name: "L'Oceanogràfic, Valencia", lat: 39.45, lon: -0.33, sr: 48, depth: null, provider: 'Oceanogràfic' }
+    ]
+  },
+  {
+    id: 'dryad_swsfc',
+    name: 'DRYAD · SWFSC',
+    type: 'Bounding Boxes',
+    env: 'wild',
+    region: 'E Tropical Pacific',
+    count: 1042,
+    sites: [
+      { name: 'Eastern Tropical Pacific (SWFSC towed array)', lat: 10.0, lon: -125.0, sr: 48, depth: null, provider: 'SWFSC/NOAA' }
+    ]
+  },
+  {
+    id: 'adriatic',
+    name: 'Adriatic Sea',
+    type: 'Time Stamps',
+    env: 'fishing',
+    region: 'Central Adriatic',
+    count: 1180,
+    sites: [
+      { name: 'Central Adriatic (trawl track, ~44.16°N)', lat: 44.16, lon: 13.51, sr: 192, depth: 61, provider: 'Di Nardo et al.' }
+    ]
+  },
+  {
+    id: 'oltremare',
+    name: 'Oltremare',
+    type: 'Time Stamps',
+    env: 'captive',
+    region: 'N Adriatic / Italy',
+    count: 16860,
+    sites: [
+      { name: 'Oltremare Marine Park, Riccione', lat: 44.0, lon: 12.66, sr: 192, depth: null, provider: 'Oltremare' }
+    ]
+  },
+  {
+    id: 'dolphinfree',
+    name: 'DOLPHINFREE',
+    type: 'Bounding Boxes',
+    env: 'wild',
+    region: 'Bay of Biscay',
+    count: 1150,
+    sites: [
+      { name: "Penmarc'h, Brittany (Bay of Biscay)", lat: 47.8, lon: -4.37, sr: 512, depth: null, provider: 'IFREMER' }
+    ]
+  }
+];
+
+const ENV_COLORS = {
+  wild:    '#4af0c4',
+  captive: '#f0824a',
+  fishing: '#a78bfa',
+  mixed:   '#facc15'
+};
+
+// Compute totals
+const totalAnnotations = DATASETS.reduce((s,d) => s + d.count, 0);
+const totalSites = DATASETS.reduce((s,d) => s + d.sites.length, 0);
+document.getElementById('total-annotations').textContent = totalAnnotations.toLocaleString();
+document.getElementById('total-sites').textContent = totalSites;
+
+// Init map
+const map = L.map('map', {
+  center: [30, -30],
+  zoom: 2,
+  zoomControl: true,
+  attributionControl: false
+});
+
+L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+  maxZoom: 18
+}).addTo(map);
+
+// Build markers
+const markerGroups = {};
+const allMarkers = [];
+
+DATASETS.forEach(ds => {
+  const group = L.layerGroup();
+  markerGroups[ds.id] = group;
+
+  ds.sites.forEach(site => {
+    const color = ENV_COLORS[ds.env];
+    const radius = Math.max(6, Math.min(18, 5 + Math.log10(ds.count + 1) * 3));
+
+    const icon = L.divIcon({
+      className: '',
+      html: `<div style="
+        width:${radius*2}px; height:${radius*2}px;
+        background:${color};
+        border-radius:50%;
+        border:2px solid rgba(255,255,255,0.3);
+        box-shadow:0 0 ${radius*2}px ${color}88, 0 0 ${radius}px ${color}44;
+        cursor:pointer;
+        transition:transform 0.15s;
+      "></div>`,
+      iconSize: [radius*2, radius*2],
+      iconAnchor: [radius, radius]
+    });
+
+    const srStr = site.sr ? `${site.sr} kHz` : '—';
+    const depthStr = site.depth ? `${site.depth} m` : '—';
+
+    const popup = L.popup({ maxWidth: 240, className: '' }).setContent(`
+      <div style="font-family:'DM Sans',sans-serif; padding:4px 2px;">
+        <div class="popup-title" style="font-family:'Space Mono',monospace;font-size:12px;font-weight:700;color:${color};margin-bottom:8px;">${site.name}</div>
+        <div class="popup-row" style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+          <span style="color:#64748b;">Dataset</span>
+          <span style="color:#e2e8f0;font-weight:500;">${ds.name}</span>
+        </div>
+        <div class="popup-row" style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+          <span style="color:#64748b;">Provider</span>
+          <span style="color:#e2e8f0;">${site.provider}</span>
+        </div>
+        <div class="popup-row" style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+          <span style="color:#64748b;">Sampling Rate</span>
+          <span style="color:#e2e8f0;font-family:'Space Mono',monospace;">${srStr}</span>
+        </div>
+        <div class="popup-row" style="display:flex;justify-content:space-between;font-size:11px;margin-bottom:3px;">
+          <span style="color:#64748b;">Depth</span>
+          <span style="color:#e2e8f0;font-family:'Space Mono',monospace;">${depthStr}</span>
+        </div>
+        <div style="font-family:'Space Mono',monospace;font-weight:700;color:${color};font-size:15px;margin-top:8px;border-top:1px solid #1e2535;padding-top:8px;">
+          ${ds.count.toLocaleString()} <span style="font-size:10px;color:#64748b;font-weight:400;">annotations</span>
+        </div>
+      </div>
+    `);
+
+    const marker = L.marker([site.lat, site.lon], { icon }).bindPopup(popup);
+    group.addLayer(marker);
+    allMarkers.push({ marker, ds, site });
+  });
+
+  group.addTo(map);
+});
+
+// Sidebar
+const listEl = document.getElementById('dataset-list');
+let activeId = null;
+
+DATASETS.forEach(ds => {
+  const card = document.createElement('div');
+  card.className = 'dataset-card';
+  card.dataset.id = ds.id;
+
+  const color = ENV_COLORS[ds.env];
+  const sitesText = ds.sites.length > 0
+    ? ds.sites.map(s => s.name).join(' · ')
+    : 'No fixed location';
+
+  card.innerHTML = `
+    <div class="card-top">
+      <span class="card-name" style="color:${color}">${ds.name}</span>
+      <span class="card-count">${ds.count.toLocaleString()}</span>
+    </div>
+    <div class="card-meta">
+      <span class="tag tag-env">${ds.env}</span>
+      <span class="tag tag-type">${ds.type}</span>
+      <span class="tag tag-region">${ds.region}</span>
+    </div>
+    <div class="card-sites">${sitesText}</div>
+  `;
+
+  card.addEventListener('click', () => {
+    if (activeId === ds.id) {
+      // Deselect
+      card.classList.remove('active');
+      activeId = null;
+      // Show all
+      Object.values(markerGroups).forEach(g => { if (!map.hasLayer(g)) g.addTo(map); });
+    } else {
+      document.querySelectorAll('.dataset-card').forEach(c => c.classList.remove('active'));
+      card.classList.add('active');
+      activeId = ds.id;
+      // Show only this dataset
+      Object.entries(markerGroups).forEach(([id, g]) => {
+        if (id === ds.id) { if (!map.hasLayer(g)) g.addTo(map); }
+        else { if (map.hasLayer(g)) map.removeLayer(g); }
+      });
+      // Fly to first site
+      if (ds.sites.length > 0) {
+        const bounds = L.latLngBounds(ds.sites.map(s => [s.lat, s.lon]));
+        map.flyToBounds(bounds.pad(0.5), { duration: 0.8, maxZoom: 8 });
+      }
+    }
+  });
+
+  listEl.appendChild(card);
+});
+}; // end window.onload
+</script>
+</body>
+</html>

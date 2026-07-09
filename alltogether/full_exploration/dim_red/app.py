@@ -7,7 +7,7 @@ Styling lives in ./assets/styles.css. Theme bootstrap in ./assets/theme.js.
 Both files are auto-loaded by Dash from the assets/ directory.
 
 Run:
-    python app.py --parquet ./projector_data.parquet --port 8050
+    python app.py --parquet ./projector_input/projector_data.parquet --port 8050
 """
 
 from __future__ import annotations
@@ -98,9 +98,28 @@ METHOD_VALID = {
 }
 print(f"  t-SNE coverage: {METHOD_VALID['tsne'].sum():,} rows")
 
+
 # -------------------------------------------------------------------------
-# Palette
+# Palette — thesis colours first, distinct overflow for high-cardinality
 # -------------------------------------------------------------------------
+# 12 on-brand hues (5 thesis colours + 7 complements), tuned for the light
+# E5ECF6 panel. Used in order, so low-cardinality colourings stay on-brand.
+THESIS_PALETTE = [
+    '#2f9292',  # teal      (thesis primary)
+    '#EF9F27',  # amber     (thesis secondary)
+    '#7b5bc9',  # violet    (thesis tertiary)
+    '#0c6dcf',  # deep blue (thesis quaternary)
+    '#D85A30',  # coral     (thesis 5th)
+    '#1d9e75',  # emerald
+    '#c4456f',  # magenta-rose
+    '#8a9a2b',  # olive
+    '#9c6b3f',  # brown
+    '#3aa6c4',  # cyan
+    '#b14ec4',  # purple-magenta
+    '#5f6b78',  # slate
+]
+
+# Overflow palette for fields with more classes than the thesis set.
 try:
     import colorcet as cc
     _raw = None
@@ -118,52 +137,51 @@ try:
             return c if c.startswith('#') else f'#{c}'
         r, g, b = c[:3]
         return '#{:02x}{:02x}{:02x}'.format(int(r*255), int(g*255), int(b*255))
-    _GLASBEY = [_to_hex(c) for c in _raw]
-    print(f"  using colorcet glasbey palette ({len(_GLASBEY)} colors)")
+    _OVERFLOW = [_to_hex(c) for c in _raw]
+    print(f"  overflow palette: colorcet glasbey ({len(_OVERFLOW)} colors)")
 except ImportError:
     import plotly.express as px
-    _GLASBEY = (
+    _OVERFLOW = (
         px.colors.qualitative.Dark24
         + px.colors.qualitative.Light24
         + px.colors.qualitative.Set3
-        + px.colors.qualitative.Pastel
     )
-    print(f"  colorcet not installed, using plotly qualitative palette ({len(_GLASBEY)})")
+    print(f"  overflow palette: plotly qualitative ({len(_OVERFLOW)})")
 
-GREY = '#bfbfbf'
+# thesis colours first, then glasbey hues not already present
+_PALETTE = THESIS_PALETTE + [c for c in _OVERFLOW if c.lower() not in
+                             {t.lower() for t in THESIS_PALETTE}]
+
+GREY = '#9aa0a6'   # thesis neutral — used for _other / __nan__ buckets
 
 def palette(n: int) -> list[str]:
-    if n <= len(_GLASBEY):
-        return _GLASBEY[:n]
-    return [_GLASBEY[i % len(_GLASBEY)] for i in range(n)]
+    if n <= len(_PALETTE):
+        return _PALETTE[:n]
+    return [_PALETTE[i % len(_PALETTE)] for i in range(n)]
 
 
-# -------------------------------------------------------------------------
-# Plotly themes — match the app's design system
-# -------------------------------------------------------------------------
 PLOTLY_THEMES = {
     'light': {
         'paper_bgcolor': '#ffffff',
-        'plot_bgcolor':  '#ffffff',
-        'font_color':    '#111827',
-        'grid_color':    '#f3f4f6',
-        'axis_color':    '#e5e7eb',
-        'tick_color':    '#9ca3af',
+        'plot_bgcolor':  '#ffffff',   # ← whitened panel (was #e5ecf6)
+        'font_color':    '#5a5a5a',
+        'grid_color':    '#e9e9e9',   # ← soft grey so the grid reads on white (was #ffffff)
+        'axis_color':    '#e0e0e0',   # ← zerolines slightly darker than the grid (was #ffffff)
+        'tick_color':    '#5a5a5a',
         'legend_bg':     'rgba(255,255,255,0.85)',
-        'legend_border': '#e5e7eb',
+        'legend_border': '#d8dde6',
     },
     'dark': {
         'paper_bgcolor': '#0e1014',
-        'plot_bgcolor':  '#0e1014',
+        'plot_bgcolor':  '#161a21',   # subtle panel so points sit on a surface
         'font_color':    '#e5e7eb',
-        'grid_color':    '#1c2027',
-        'axis_color':    '#262b33',
+        'grid_color':    '#222732',
+        'axis_color':    '#222732',
         'tick_color':    '#6b7280',
         'legend_bg':     'rgba(22,25,31,0.85)',
         'legend_border': '#262b33',
     },
 }
-
 # -------------------------------------------------------------------------
 # App
 # -------------------------------------------------------------------------
@@ -219,7 +237,7 @@ def _segmented(id_, options, value):
     )
 
 
-app.layout = html.Div([
+app.layout = html.Div(className='app-root', children=[
     # ---------- Header (topbar + slider row) ----------
     html.Div(className='app-header', children=[
         # Row 1: title + main controls
@@ -390,6 +408,17 @@ def _variance_tuple(method: str, dim: str):
     return ', '.join(parts), f'{PCA_VARIANCE[:n].sum():.3f}'
 
 
+def _axis_title(method: str, axis_idx: int) -> str:
+    """axis_idx: 0=x, 1=y, 2=z."""
+    if method == 'pca':
+        base = f'Component {axis_idx + 1}'
+        if PCA_VARIANCE is not None and axis_idx < len(PCA_VARIANCE):
+            return f'{base} ({PCA_VARIANCE[axis_idx] * 100:.1f}%)'
+        return base
+    label = {'umap': 'UMAP', 'tsne': 't-SNE'}[method]
+    return f'{label} {axis_idx + 1}'
+
+        
 @app.callback(
     Output('scatter', 'figure'),
     Output('status-bar', 'children'),
@@ -482,8 +511,8 @@ def update_figure(method, dim, color_by, dataset_filter, label_filter, render_ca
                 'row: %{customdata[0]}<extra></extra>'
             ),
             text=s['dataset'].astype(str).tolist(),
-            marker=dict(size=3 if dim == '3d' else 4,
-                        opacity=0.5 if cat in ('_other', '__nan__') else 0.78,
+            marker=dict(size=3 if dim == '3d' else 3,
+                        opacity=0.4 if cat in ('_other', '__nan__') else 0.7,
                         color=color_map[cat],
                         line=dict(width=0)),
         )
@@ -513,7 +542,7 @@ def update_figure(method, dim, color_by, dataset_filter, label_filter, render_ca
             bgcolor=thm['legend_bg'],
             bordercolor=thm['legend_border'],
             borderwidth=1,
-            x=1.0, y=1.0, xanchor='right', yanchor='top',
+            x=1.0, y=0.9, xanchor='right', yanchor='top',
         ),
         hoverlabel=dict(
             bgcolor=thm['paper_bgcolor'],
@@ -532,16 +561,16 @@ def update_figure(method, dim, color_by, dataset_filter, label_filter, render_ca
             tickfont=dict(size=9),
         )
         fig.update_layout(scene=dict(
-            xaxis=dict(title=xc, **axis_style),
-            yaxis=dict(title=yc, **axis_style),
-            zaxis=dict(title=zc, **axis_style),
+            xaxis=dict(title=_axis_title(method, 0), **axis_style),
+            yaxis=dict(title=_axis_title(method, 1), **axis_style),
+            zaxis=dict(title=_axis_title(method, 2), **axis_style),
             aspectmode='cube',
             bgcolor=thm['plot_bgcolor'],
         ))
     else:
-        fig.update_xaxes(title=xc, gridcolor=thm['grid_color'],
+        fig.update_xaxes(title=_axis_title(method, 0), gridcolor=thm['grid_color'],
                          zerolinecolor=thm['axis_color'], color=thm['tick_color'])
-        fig.update_yaxes(title=yc, scaleanchor='x', scaleratio=1,
+        fig.update_yaxes(title=_axis_title(method, 1), scaleanchor='x', scaleratio=1,
                          gridcolor=thm['grid_color'], zerolinecolor=thm['axis_color'],
                          color=thm['tick_color'])
 

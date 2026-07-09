@@ -39,20 +39,21 @@
   --plot-bg:       #0e1014;
 }
 
-/* ------------------------------------------------------------ Base */
-html, body {
-  margin: 0;
-  padding: 0;
-  background: var(--bg);
-  color: var(--text);
-  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", system-ui,
-               "Helvetica Neue", Arial, sans-serif;
-  font-size: 14px;
-  line-height: 1.45;
-  -webkit-font-smoothing: antialiased;
-  -moz-osx-font-smoothing: grayscale;
+
+html, body { height: 100%; }
+
+.app-root {
+  height: 100vh;
+  display: flex;
+  flex-direction: column;
 }
 
+.main-split {
+  display: flex;
+  flex: 1 1 auto;
+  min-height: 0;
+  background: var(--bg);
+}
 * { box-sizing: border-box; }
 
 /* ------------------------------------------------------------ Header (top bar) */
@@ -162,11 +163,7 @@ html, body {
 .status-pill.accent .pill-value { color: var(--accent); font-weight: 600; }
 
 /* ------------------------------------------------------------ Main split */
-.main-split {
-  display: flex;
-  height: calc(100vh - 140px); /* topbar + slider row + status bar */
-  background: var(--bg);
-}
+
 
 .plot-pane {
   flex: 1 1 70%;
@@ -425,3 +422,16 @@ html, body {
   border-radius: 4px;
 }
 *::-webkit-scrollbar-thumb:hover { background: var(--text-faint); }
+
+/* Give the controls row room when multi-select chips stack */
+.app-topbar {
+  row-gap: 10px;
+  align-items: flex-start;   /* was center — lets tall dropdowns grow down cleanly */
+}
+
+/* Cap the labels/datasets dropdown height so many chips scroll instead of pushing */
+#label-filter .Select-control,
+#dataset-filter .Select-control {
+  max-height: 64px;
+  overflow-y: auto;
+}
